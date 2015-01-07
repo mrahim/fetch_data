@@ -18,8 +18,10 @@ def set_base_dir():
     if not os.path.isdir(base_dir):
         base_dir = '/media/FREECOM/Data/ADNI_baseline_rs_fmri_mri'
         if not os.path.isdir(base_dir):
-            base_dir = ''
-            raise OSError('Data not found !')
+            base_dir = '/media/mr243268/FREECOM/Data/ADNI_baseline_rs_fmri_mri'
+	    if not os.path.isdir(base_dir):
+		base_dir = ''
+	        raise OSError('Data not found !')
     return base_dir
 
 def fetch_adni_rs_fmri():
