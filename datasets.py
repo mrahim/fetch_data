@@ -41,7 +41,7 @@ def fetch_adni_rs_fmri():
     for f in subject_paths:
         _, subject_id = os.path.split(f)
         if not subject_id in excluded_subjects:
-            func_files.append(glob.glob(os.path.join(f, 'func', 'wr*.nii'))[0])
+            func_files.append(glob.glob(os.path.join(f, 'func', 'twr*.nii'))[0])
             dx_group.append( \
             s_description[s_description.Subject_ID == subject_id[1:]].DX_Group_x.values[0])
     return Bunch(func=func_files, dx_group=dx_group)
