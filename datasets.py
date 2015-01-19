@@ -83,4 +83,34 @@ def fetch_adni_fdg_pet():
         
     return Bunch(pet=pet_files, dx_group=dx_group, subjects=subjects)
     
+
+def fetch_adni_petmr():
+    """Returns paths of the intersection between PET and FMRI datasets
+    """
+    pet_dataset = fetch_adni_fdg_pet()
+    fmri_dataset = fetch_adni_rs_fmri()
     
+    petmr_subjects = np.intersect1d(pet_dataset['subjects'],
+                                    fmri_dataset['subjects'],
+                                    assume_unique=True)
+    
+    #remaining_subjects = np.setdiff1d(fmri_dataset['subjects'], petmr_subjects)
+    
+    petmr_idx = []
+    mrpet_idx = []
+    for petmr_subject in petmr_subjects:
+        petmr_idx.append(\
+        np.where(np.array(pet_dataset['subjects']) == petmr_subject)[0][0])
+        mrpet_idx.append(\
+        np.where(np.array(fmri_dataset['subjects']) == petmr_subject)[0][0])
+    
+    petmr_idx = np.array(petmr_idx, dtype=np.intp)
+    mrpet_idx = np.array(mrpet_idx, dtype=np.intp)
+    pet_groups = np.array(pet_dataset['dx_group'])
+    petmr_groups = pet_groups[petmr_idx]
+    
+    func_files = np.array(fmri_dataset['func'])[mrpet_idx]
+    pet_files = np.array(pet_dataset['pet'])[petmr_idx]
+
+    return Bunch(func=func_files, pet=pet_files,
+                 dx_group=petmr_groups, subjects=petmr_subjects)
