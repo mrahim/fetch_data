@@ -1,6 +1,8 @@
 # *- encoding: utf-8 -*-
 """
-    Author : Mehdi Rahim
+    Standard dataset fetching functions
+    
+    @author: mehdi.rahim@cea.fr
 """
 
 import os, glob
