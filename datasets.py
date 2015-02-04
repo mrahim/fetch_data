@@ -17,12 +17,14 @@ def set_features_base_dir():
     
     base_dir = '/disk4t/mehdi/data/features'
     if not os.path.isdir(base_dir):
-        base_dir = '/media/FREECOM/Data/features'
+        base_dir = '/home/mr243268/data/features'
         if not os.path.isdir(base_dir):
-            base_dir = '/media/mr243268/FREECOM/Data/features'
-	    if not os.path.isdir(base_dir):
-		base_dir = ''
-	        raise OSError('Data not found !')
+            base_dir = '/media/FREECOM/Data/features'
+            if not os.path.isdir(base_dir):
+                base_dir = '/media/mr243268/FREECOM/Data/features'
+                if not os.path.isdir(base_dir):
+                    base_dir = ''
+                    raise OSError('Data not found !')
     return base_dir
 
 
