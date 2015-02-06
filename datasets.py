@@ -99,6 +99,7 @@ def fetch_adni_rs_fmri():
                                              'description_file.csv'))
     func_files = []
     dx_group = []
+    mmscores = []
     subjects = []
     for f in subject_paths:
         _, subject_id = os.path.split(f)
@@ -107,7 +108,10 @@ def fetch_adni_rs_fmri():
             dx_group.append( \
             s_description[s_description.Subject_ID == subject_id[1:]].DX_Group_x.values[0])
             subjects.append(subject_id[1:])
-    return Bunch(func=func_files, dx_group=dx_group, subjects=subjects)
+            mmscores.append( \
+            s_description[s_description.Subject_ID == subject_id[1:]].MMSCORE.values[0])
+    return Bunch(func=func_files, dx_group=dx_group,
+                 mmscores=mmscores, subjects=subjects)
 
 
 def fetch_adni_fdg_pet():
@@ -118,6 +122,7 @@ def fetch_adni_fdg_pet():
     s_description = pd.read_csv(os.path.join(BASE_DIR, 'description_file.csv'))
     
     pet_files = []
+    mmscores = []
     dx_group = []       
     subjects = []
     for idx, row in s_description.iterrows():
@@ -126,8 +131,9 @@ def fetch_adni_fdg_pet():
                                                 'wI*.nii'))[0])
         dx_group.append(row['DX_Group'])
         subjects.append(row['Subject_ID'])
-        
-    return Bunch(pet=pet_files, dx_group=dx_group, subjects=subjects)
+        mmscores.append(row['MMSCORE'])
+    return Bunch(pet=pet_files, dx_group=dx_group,
+                 mmscores=mmscores, subjects=subjects)
     
 
 
@@ -147,11 +153,13 @@ def fetch_adni_fdg_pet_diff():
     pet_idx = np.array(pet_idx, dtype=np.intp)
     pet_groups = np.array(pet_dataset['dx_group'])
     pet_groups = pet_groups[pet_idx]
+    pet_mmscores = np.array(pet_dataset['mmscores'])
+    pet_mmscores = pet_mmscores[pet_idx]
     
     pet_files = np.array(pet_dataset['pet'])[pet_idx]
 
     return Bunch(pet=pet_files, dx_group=pet_groups,
-                 subjects=remaining_subjects)
+                 mmscores=pet_mmscores, subjects=remaining_subjects)
 
 
 def fetch_adni_petmr():
@@ -178,12 +186,14 @@ def fetch_adni_petmr():
     mrpet_idx = np.array(mrpet_idx, dtype=np.intp)
     pet_groups = np.array(pet_dataset['dx_group'])
     petmr_groups = pet_groups[petmr_idx]
+    pet_mmscores = np.array(pet_dataset['mmscores'])
+    petmr_mmscores = pet_mmscores[petmr_idx]
     
     func_files = np.array(fmri_dataset['func'])[mrpet_idx]
     pet_files = np.array(pet_dataset['pet'])[petmr_idx]
 
-    return Bunch(func=func_files, pet=pet_files,
-                 dx_group=petmr_groups, subjects=petmr_subjects)
+    return Bunch(func=func_files, pet=pet_files, dx_group=petmr_groups,
+                 mmscores=petmr_mmscores, subjects=petmr_subjects)
 
 def fetch_adni_masks():
     FEAT_DIR = set_features_base_dir()
