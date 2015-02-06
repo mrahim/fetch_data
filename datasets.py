@@ -11,6 +11,17 @@ import pandas as pd
 from sklearn.datasets.base import Bunch
 
 
+def set_cache_base_dir():
+    """ CACHE_DIR could be disk4t or laptop
+    """
+    
+    base_dir = '/disk4t/mehdi/data/tmp'
+    if not os.path.isdir(base_dir):
+        base_dir = '/home/mr243268/data/tmp'
+        if not os.path.isdir(base_dir):
+            base_dir = '.'
+    return base_dir
+
 def set_features_base_dir():
     """ BASE_DIR could be on disk4t or on FREECOM
     """
