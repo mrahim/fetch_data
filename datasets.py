@@ -200,3 +200,10 @@ def fetch_adni_masks():
     return Bunch(mask_pet=os.path.join(FEAT_DIR, 'masks', 'mask_pet.nii.gz'),
                  mask_fmri=os.path.join(FEAT_DIR, 'masks', 'mask_fmri.nii.gz'),
                  mask_petmr=os.path.join(FEAT_DIR, 'masks', 'mask_petmr.nii.gz'))
+                 
+def set_group_indices(dx_group):
+    dx_group = np.array(dx_group)
+    idx = {}
+    for g in ['AD', 'LMCI', 'EMCI', 'Normal']:
+        idx[g] = np.where(dx_group == g)
+    return idx
