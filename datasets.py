@@ -19,7 +19,9 @@ def set_cache_base_dir():
     if not os.path.isdir(base_dir):
         base_dir = '/home/mr243268/data/tmp'
         if not os.path.isdir(base_dir):
-            base_dir = '.'
+	   base_dir = '/storage/tompouce/mrahim/data/tmp'
+	   if not os.path.isdir(base_dir):
+	      base_dir = '.'
     return base_dir
 
 def set_features_base_dir():
@@ -33,8 +35,10 @@ def set_features_base_dir():
             base_dir = '/media/FREECOM/Data/features'
             if not os.path.isdir(base_dir):
                 base_dir = '/media/mr243268/FREECOM/Data/features'
-                if not os.path.isdir(base_dir):
-                    base_dir = ''
+		if not os.path.isdir(base_dir):
+		    base_dir = '/storage/tompouce/mrahim/data/features'
+                    if not os.path.isdir(base_dir):
+			base_dir = ''
                     raise OSError('Data not found !')
     return base_dir
 
@@ -65,8 +69,10 @@ def set_rs_fmri_base_dir():
         if not os.path.isdir(base_dir):
             base_dir = '/media/mr243268/FREECOM/Data/ADNI_rs_fmri'
 	    if not os.path.isdir(base_dir):
-		base_dir = ''
-	        raise OSError('Data not found !')
+		base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_rs_fmri'
+		if not os.path.isdir(base_dir):
+		    base_dir = ''
+	            raise OSError('Data not found !')
     return base_dir
 
 
@@ -81,7 +87,9 @@ def set_fdg_pet_base_dir():
         if not os.path.isdir(base_dir):
             base_dir = '/media/mr243268/FREECOM/Data/ADNI_baseline_fdg_pet'
 	    if not os.path.isdir(base_dir):
-		base_dir = ''
+		base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_fdg_pet'
+		if not os.path.isdir(base_dir):
+		    base_dir = ''
 	        raise OSError('Data not found !')
     return base_dir
 
