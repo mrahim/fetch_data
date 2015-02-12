@@ -39,7 +39,7 @@ def set_features_base_dir():
 		    base_dir = '/storage/tompouce/mrahim/data/features'
                     if not os.path.isdir(base_dir):
 			base_dir = ''
-                    raise OSError('Data not found !')
+                    	raise OSError('Data not found !')
     return base_dir
 
 
@@ -90,7 +90,7 @@ def set_fdg_pet_base_dir():
 		base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_fdg_pet'
 		if not os.path.isdir(base_dir):
 		    base_dir = ''
-	        raise OSError('Data not found !')
+	            raise OSError('Data not found !')
     return base_dir
 
 def fetch_adni_rs_fmri():
