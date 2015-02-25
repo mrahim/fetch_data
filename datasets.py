@@ -8,7 +8,20 @@
 import os, glob
 import numpy as np
 import pandas as pd
+import nibabel as nib
 from sklearn.datasets.base import Bunch
+
+def array_to_niis(data, mask_img):
+    data_ = np.zeros(data.shape[:1] + mask_img.shape)
+    data_[:, mask_img.get_data().astype(np.bool)] = data
+    data_ = np.transpose(data_, axes=(1,2,3,0))
+    return nib.Nifti1Image(data_, mask_img.get_affine())
+
+def array_to_nii(data, mask_img):
+    data_ = np.zeros(mask_img.shape)
+    data_[mask_img.get_data().astype(np.bool)] = data
+    return nib.Nifti1Image(data, mask_img.get_affine())
+
 
 
 def set_cache_base_dir():
