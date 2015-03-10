@@ -66,26 +66,10 @@ def set_rs_fmri_base_dir_old():
     """
     return set_data_base_dir('ADNI_baseline_rs_fmri_mri')
 
-
-
 def set_rs_fmri_base_dir():
     """ BASE_DIR could be on disk4t or on FREECOM
     """
     return set_data_base_dir('ADNI_baseline_rs_fmri_mri')
-    
-#    base_dir = '/disk4t/mehdi/data/ADNI_baseline_rs_fmri_mri/preprocessed_rs_fmri'
-#    if not os.path.isdir(base_dir):
-#        base_dir = '/media/FREECOM/Data/ADNI_rs_fmri'
-#        if not os.path.isdir(base_dir):
-#            base_dir = '/media/mr243268/FREECOM/Data/ADNI_rs_fmri'
-#            if not os.path.isdir(base_dir):
-#                base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_rs_fmri'
-#                if not os.path.isdir(base_dir):
-#                    base_dir = '/home/parietal/mrahim/data/ADNI_baseline_rs_fmri'
-#                    if not os.path.isdir(base_dir):
-#                        base_dir = ''
-#                        raise OSError('Data not found !')
-#    return base_dir
 
 def set_fdg_pet_base_dir():
     """ BASE_DIR could be on disk4t or on FREECOM
@@ -122,8 +106,8 @@ def fetch_adni_rs_fmri():
 
 
 
-def fetch_adni_pet():
-    BASE_DIR = set_pet_base_dir()
+def fetch_adni_fdg_pet():
+    BASE_DIR = set_fdg_pet_base_dir()
     subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 's[0-9]*')))
     excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
                                                 'excluded_subjects.txt'),
@@ -141,35 +125,13 @@ def fetch_adni_pet():
             pet_files.append(glob.glob(os.path.join(f, 'pet', 'w*.nii'))[0])
             dx_group.append( \
             s_description[s_description.Subject_ID == subject_id[1:]]\
-            .DX_Group_x.values[0])
+            .DX_Group.values[0])
             subjects.append(subject_id[1:])
             mmscores.append( \
             s_description[s_description.Subject_ID == subject_id[1:]]\
             .MMSCORE.values[0])
     return Bunch(pet=pet_files, dx_group=dx_group,
-                 mmscores=mmscores, subjects=subjects)
-
-def fetch_adni_fdg_pet():
-    """ Returns paths of ADNI FDG-PET
-    """
-
-    BASE_DIR = set_fdg_pet_base_dir()
-    s_description = pd.read_csv(os.path.join(BASE_DIR, 'description_file.csv'))
-    
-    pet_files = []
-    mmscores = []
-    dx_group = []       
-    subjects = []
-    for idx, row in s_description.iterrows():
-        pet_files.append(glob.glob(os.path.join(BASE_DIR,
-                                                'I' + str(row.Image_ID),
-                                                'wI*.nii'))[0])
-        dx_group.append(row['DX_Group'])
-        subjects.append(row['Subject_ID'])
-        mmscores.append(row['MMSCORE'])
-    return Bunch(pet=pet_files, dx_group=dx_group,
-                 mmscores=mmscores, subjects=subjects)
-    
+                 mmscores=mmscores, subjects=subjects)    
 
 
 def fetch_adni_fdg_pet_diff():
