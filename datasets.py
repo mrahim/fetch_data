@@ -24,12 +24,27 @@ def array_to_nii(data, mask):
     data_[mask_img.get_data().astype(np.bool)] = data
     return nib.Nifti1Image(data_, mask_img.get_affine())
 
+def set_base_dir():
+    base_dir = ''
+    with open(os.path.join(os.path.dirname(__file__), 'paths.pref'),
+              'rU') as f:
+        paths = [x.strip() for x in f.read().split('\n')]
+        for path in paths:
+            if os.path.isdir(path):
+                base_dir = path
+                break
+    if base_dir == '':
+        raise OSError('Data not found !')
+    return base_dir
+
+
+def set_data_base_dir(folder):
+    return os.path.join(set_base_dir(), folder)
 
 
 def set_cache_base_dir():
     """ CACHE_DIR could be disk4t or laptop
-    """
-    
+    """    
     base_dir = '/disk4t/mehdi/data/tmp'
     if not os.path.isdir(base_dir):
         base_dir = '/home/mr243268/data/tmp'
@@ -44,77 +59,38 @@ def set_cache_base_dir():
 def set_features_base_dir():
     """ BASE_DIR could be on disk4t, laptop, FREECOM, drago or tompouce
     """
-    
-    base_dir = '/disk4t/mehdi/data/features'
-    if not os.path.isdir(base_dir):
-        base_dir = '/home/mr243268/data/features'
-        if not os.path.isdir(base_dir):
-            base_dir = '/media/FREECOM/Data/features'
-            if not os.path.isdir(base_dir):
-                base_dir = '/media/mr243268/FREECOM/Data/features'
-                if not os.path.isdir(base_dir):
-                    base_dir = '/storage/tompouce/mrahim/data/features'
-                    if not os.path.isdir(base_dir):
-                        base_dir = '/home/parietal/mrahim/data/features'
-                        if not os.path.isdir(base_dir):
-                            base_dir = ''
-                            raise OSError('Data not found !')
-    return base_dir
-
+    return set_data_base_dir('features')
 
 def set_rs_fmri_base_dir_old():
     """ BASE_DIR could be on disk4t or on FREECOM
     """
-    
-    base_dir = '/disk4t/mehdi/data/ADNI_baseline_rs_fmri_mri/preprocess_output'
-    if not os.path.isdir(base_dir):
-        base_dir = '/media/FREECOM/Data/ADNI_baseline_rs_fmri_mri'
-        if not os.path.isdir(base_dir):
-            base_dir = '/media/mr243268/FREECOM/Data/ADNI_baseline_rs_fmri_mri'
-	    if not os.path.isdir(base_dir):
-		base_dir = ''
-	        raise OSError('Data not found !')
-    return base_dir
+    return set_data_base_dir('ADNI_baseline_rs_fmri_mri')
 
 
 
 def set_rs_fmri_base_dir():
     """ BASE_DIR could be on disk4t or on FREECOM
     """
+    return set_data_base_dir('ADNI_baseline_rs_fmri_mri')
     
-    base_dir = '/disk4t/mehdi/data/ADNI_baseline_rs_fmri_mri/preprocessed_rs_fmri'
-    if not os.path.isdir(base_dir):
-        base_dir = '/media/FREECOM/Data/ADNI_rs_fmri'
-        if not os.path.isdir(base_dir):
-            base_dir = '/media/mr243268/FREECOM/Data/ADNI_rs_fmri'
-            if not os.path.isdir(base_dir):
-                base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_rs_fmri'
-                if not os.path.isdir(base_dir):
-                    base_dir = '/home/parietal/mrahim/data/ADNI_baseline_rs_fmri'
-                    if not os.path.isdir(base_dir):
-                        base_dir = ''
-                        raise OSError('Data not found !')
-    return base_dir
-
-
+#    base_dir = '/disk4t/mehdi/data/ADNI_baseline_rs_fmri_mri/preprocessed_rs_fmri'
+#    if not os.path.isdir(base_dir):
+#        base_dir = '/media/FREECOM/Data/ADNI_rs_fmri'
+#        if not os.path.isdir(base_dir):
+#            base_dir = '/media/mr243268/FREECOM/Data/ADNI_rs_fmri'
+#            if not os.path.isdir(base_dir):
+#                base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_rs_fmri'
+#                if not os.path.isdir(base_dir):
+#                    base_dir = '/home/parietal/mrahim/data/ADNI_baseline_rs_fmri'
+#                    if not os.path.isdir(base_dir):
+#                        base_dir = ''
+#                        raise OSError('Data not found !')
+#    return base_dir
 
 def set_fdg_pet_base_dir():
     """ BASE_DIR could be on disk4t or on FREECOM
     """
-    
-    base_dir = '/disk4t/mehdi/data/ADNI_baseline_fdg_pet'
-    if not os.path.isdir(base_dir):
-        base_dir = '/media/FREECOM/Data/ADNI_baseline_fdg_pet'
-        if not os.path.isdir(base_dir):
-            base_dir = '/media/mr243268/FREECOM/Data/ADNI_baseline_fdg_pet'
-            if not os.path.isdir(base_dir):
-                base_dir = '/storage/tompouce/mrahim/data/ADNI_baseline_fdg_pet'
-                if not os.path.isdir(base_dir):
-                    base_dir = '/home/parietal/mrahim/data/ADNI_baseline_fdg_pet'
-                    if not os.path.isdir(base_dir):
-                        base_dir = ''
-                        raise OSError('Data not found !')
-    return base_dir
+    return set_data_base_dir('ADNI_baseline_fdg_pet')
 
 def fetch_adni_rs_fmri():
     """ Returns paths of ADNI resting-state fMRI
@@ -144,6 +120,34 @@ def fetch_adni_rs_fmri():
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
 
+
+
+def fetch_adni_pet():
+    BASE_DIR = set_pet_base_dir()
+    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 's[0-9]*')))
+    excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
+                                                'excluded_subjects.txt'),
+                                   dtype=str)
+    
+    s_description = pd.read_csv(os.path.join(BASE_DIR,
+                                             'description_file.csv'))
+    pet_files = []
+    dx_group = []
+    mmscores = []
+    subjects = []
+    for f in subject_paths:
+        _, subject_id = os.path.split(f)
+        if not subject_id in excluded_subjects:
+            pet_files.append(glob.glob(os.path.join(f, 'pet', 'w*.nii'))[0])
+            dx_group.append( \
+            s_description[s_description.Subject_ID == subject_id[1:]]\
+            .DX_Group_x.values[0])
+            subjects.append(subject_id[1:])
+            mmscores.append( \
+            s_description[s_description.Subject_ID == subject_id[1:]]\
+            .MMSCORE.values[0])
+    return Bunch(pet=pet_files, dx_group=dx_group,
+                 mmscores=mmscores, subjects=subjects)
 
 def fetch_adni_fdg_pet():
     """ Returns paths of ADNI FDG-PET
