@@ -1,7 +1,7 @@
 # *- encoding: utf-8 -*-
 """
-    Standard dataset fetching functions
-    
+    Standard dataset fetching functions,
+    and some fast mask utils
     @author: mehdi.rahim@cea.fr
 """
 
@@ -12,19 +12,25 @@ import nibabel as nib
 from sklearn.datasets.base import Bunch
 
 def array_to_niis(data, mask):
+    """ Converts masked nii 4D array to 4D niimg
+    """
     mask_img = nib.load(mask)
     data_ = np.zeros(data.shape[:1] + mask_img.shape)
     data_[:, mask_img.get_data().astype(np.bool)] = data
-    data_ = np.transpose(data_, axes=(1,2,3,0))
+    data_ = np.transpose(data_, axes=(1, 2, 3, 0))
     return nib.Nifti1Image(data_, mask_img.get_affine())
 
 def array_to_nii(data, mask):
+    """ Converts masked nii 3D array to 3D niimg
+    """
     mask_img = nib.load(mask)
     data_ = np.zeros(mask_img.shape)
     data_[mask_img.get_data().astype(np.bool)] = data
     return nib.Nifti1Image(data_, mask_img.get_affine())
 
 def set_base_dir():
+    """ base_dir
+    """
     base_dir = ''
     with open(os.path.join(os.path.dirname(__file__), 'paths.pref'),
               'rU') as f:
@@ -39,53 +45,39 @@ def set_base_dir():
 
 
 def set_data_base_dir(folder):
+    """ base_dir + folder
+    """
     return os.path.join(set_base_dir(), folder)
 
 
 def set_cache_base_dir():
-    """ CACHE_DIR could be disk4t or laptop
-    """    
-    base_dir = '/disk4t/mehdi/data/tmp'
-    if not os.path.isdir(base_dir):
-        base_dir = '/home/mr243268/data/tmp'
-        if not os.path.isdir(base_dir):
-            base_dir = '/storage/tompouce/mrahim/data/tmp'
-            if not os.path.isdir(base_dir):
-                base_dir = '/home/parietal/mrahim/data/tmp'
-                if not os.path.isdir(base_dir):
-                    base_dir = '.'
-    return base_dir
+    """ memory cache folder
+    """
+    return set_data_base_dir('tmp')
 
 def set_features_base_dir():
-    """ BASE_DIR could be on disk4t, laptop, FREECOM, drago or tompouce
+    """ features folder
     """
     return set_data_base_dir('features')
 
-def set_rs_fmri_base_dir_old():
-    """ BASE_DIR could be on disk4t or on FREECOM
-    """
-    return set_data_base_dir('ADNI_baseline_rs_fmri_mri')
-
 def set_rs_fmri_base_dir():
-    """ BASE_DIR could be on disk4t or on FREECOM
+    """ baseline rs-fmri folder
     """
     return set_data_base_dir('ADNI_baseline_rs_fmri_mri')
 
 def set_fdg_pet_base_dir():
-    """ BASE_DIR could be on disk4t or on FREECOM
+    """ baseline fdg-pet folder
     """
     return set_data_base_dir('ADNI_baseline_fdg_pet')
 
 def fetch_adni_rs_fmri():
     """ Returns paths of ADNI resting-state fMRI
     """
-    
     BASE_DIR = set_rs_fmri_base_dir()
     subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 's[0-9]*')))
     excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
                                                 'excluded_subjects.txt'),
                                    dtype=str)
-    
     s_description = pd.read_csv(os.path.join(BASE_DIR,
                                              'description_file.csv'))
     func_files = []
@@ -97,22 +89,24 @@ def fetch_adni_rs_fmri():
         if not subject_id in excluded_subjects:
             func_files.append(glob.glob(os.path.join(f, 'func', 'swr*.nii'))[0])
             dx_group.append( \
-            s_description[s_description.Subject_ID == subject_id[1:]].DX_Group_x.values[0])
+            s_description[s_description.Subject_ID == subject_id[1:]]\
+            .DX_Group_x.values[0])
             subjects.append(subject_id[1:])
             mmscores.append( \
-            s_description[s_description.Subject_ID == subject_id[1:]].MMSCORE.values[0])
+            s_description[s_description.Subject_ID == subject_id[1:]]\
+            .MMSCORE.values[0])
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
 
 
-
 def fetch_adni_fdg_pet():
+    """Returns paths of ADNI baseline FDG-PET
+    """
     BASE_DIR = set_fdg_pet_base_dir()
     subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 's[0-9]*')))
     excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
                                                 'excluded_subjects.txt'),
                                    dtype=str)
-    
     s_description = pd.read_csv(os.path.join(BASE_DIR,
                                              'description_file.csv'))
     pet_files = []
@@ -131,28 +125,24 @@ def fetch_adni_fdg_pet():
             s_description[s_description.Subject_ID == subject_id[1:]]\
             .MMSCORE.values[0])
     return Bunch(pet=pet_files, dx_group=dx_group,
-                 mmscores=mmscores, subjects=subjects)    
-
+                 mmscores=mmscores, subjects=subjects)
 
 def fetch_adni_fdg_pet_diff():
     """Returns paths of the diff between PET and fMRI datasets
     """
     pet_dataset = fetch_adni_fdg_pet()
     fmri_dataset = fetch_adni_rs_fmri()
-    
     remaining_subjects = np.setdiff1d(pet_dataset['subjects'],
                                       fmri_dataset['subjects'])
     pet_idx = []
     for pet_subject in remaining_subjects:
         pet_idx.append(\
         np.where(np.array(pet_dataset['subjects']) == pet_subject)[0][0])
-    
     pet_idx = np.array(pet_idx, dtype=np.intp)
     pet_groups = np.array(pet_dataset['dx_group'])
     pet_groups = pet_groups[pet_idx]
     pet_mmscores = np.array(pet_dataset['mmscores'])
     pet_mmscores = pet_mmscores[pet_idx]
-    
     pet_files = np.array(pet_dataset['pet'])[pet_idx]
 
     return Bunch(pet=pet_files, dx_group=pet_groups,
@@ -164,13 +154,9 @@ def fetch_adni_petmr():
     """
     pet_dataset = fetch_adni_fdg_pet()
     fmri_dataset = fetch_adni_rs_fmri()
-    
     petmr_subjects = np.intersect1d(pet_dataset['subjects'],
                                     fmri_dataset['subjects'],
                                     assume_unique=True)
-    
-    #remaining_subjects = np.setdiff1d(fmri_dataset['subjects'], petmr_subjects)
-    
     petmr_idx = []
     mrpet_idx = []
     for petmr_subject in petmr_subjects:
@@ -178,14 +164,13 @@ def fetch_adni_petmr():
         np.where(np.array(pet_dataset['subjects']) == petmr_subject)[0][0])
         mrpet_idx.append(\
         np.where(np.array(fmri_dataset['subjects']) == petmr_subject)[0][0])
-    
+
     petmr_idx = np.array(petmr_idx, dtype=np.intp)
     mrpet_idx = np.array(mrpet_idx, dtype=np.intp)
     pet_groups = np.array(pet_dataset['dx_group'])
     petmr_groups = pet_groups[petmr_idx]
     pet_mmscores = np.array(pet_dataset['mmscores'])
     petmr_mmscores = pet_mmscores[petmr_idx]
-    
     func_files = np.array(fmri_dataset['func'])[mrpet_idx]
     pet_files = np.array(pet_dataset['pet'])[petmr_idx]
 
@@ -193,14 +178,21 @@ def fetch_adni_petmr():
                  mmscores=petmr_mmscores, subjects=petmr_subjects)
 
 def fetch_adni_masks():
+    """Returns paths of masks (pet, fmri, both)
+    """
     FEAT_DIR = set_features_base_dir()
-    return Bunch(mask_pet=os.path.join(FEAT_DIR, 'masks', 'mask_pet.nii.gz'),
-                 mask_fmri=os.path.join(FEAT_DIR, 'masks', 'mask_fmri.nii.gz'),
-                 mask_petmr=os.path.join(FEAT_DIR, 'masks', 'mask_petmr.nii.gz'))
-                 
+    return Bunch(mask_pet=os.path.join(FEAT_DIR, 'masks',
+                                       'mask_pet.nii.gz'),
+                 mask_fmri=os.path.join(FEAT_DIR, 'masks',
+                                        'mask_fmri.nii.gz'),
+                 mask_petmr=os.path.join(FEAT_DIR, 'masks',
+                                         'mask_petmr.nii.gz'))
+
 def set_group_indices(dx_group):
+    """Returns indices for each clinical group
+    """
     dx_group = np.array(dx_group)
     idx = {}
     for g in ['AD', 'LMCI', 'EMCI', 'Normal']:
-        idx[g] = np.where(dx_group == g)
+        idx[g] = np.where(dx_group == g)[0]
     return idx
