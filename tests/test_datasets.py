@@ -17,6 +17,9 @@ def test_fetch_data():
     """test that paths exist
     """
 
-    assert_true(os.path.isdir(fetch_data.set_base_dir))
-    assert_true(os.path.isdir(fetch_data.set_cache_base_dir))
+    assert_true(os.path.isdir(fetch_data.set_base_dir()))
+    assert_true(os.path.isdir(fetch_data.set_cache_base_dir()))
     assert_true(os.path.isdir(fetch_data.set_fdg_pet_base_dir()))
+    assert_true(os.path.isdir(fetch_data.set_rs_fmri_base_dir()))
+    assert_true(os.path.isdir(fetch_data.set_features_base_dir()))
+    assert_true(os.path.isdir(fetch_data.set_base_dir()))
