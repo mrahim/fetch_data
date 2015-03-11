@@ -99,6 +99,26 @@ def fetch_adni_rs_fmri():
                  mmscores=mmscores, subjects=subjects)
 
 
+def fetch_adni_rs_fmri_conn(folder):
+    """Returns paths of ADNI rs-fMRI processed connectivity
+    """
+    FEAT_DIR = set_features_base_dir()
+    FMRI_DIR = os.path.join(FEAT_DIR, 'smooth_preproc', folder)
+    dataset = fetch_adni_petmr()
+    subj_list = dataset['subjects']
+    
+    ### load fMRI features
+    X = []
+    for i in np.arange(len(subj_list)):
+        X.append(np.load(os.path.join(FMRI_DIR, subj_list[i]+'.npz'))['corr'])
+    X = np.array(X)
+    
+    return Bunch(fmri_data=X,
+                 dx_group=np.array(dataset['dx_group']),
+                 mmscores=np.array(dataset['mmscores']),
+                 subjects=subj_list)
+
+
 def fetch_adni_fdg_pet():
     """Returns paths of ADNI baseline FDG-PET
     """
@@ -147,7 +167,6 @@ def fetch_adni_fdg_pet_diff():
 
     return Bunch(pet=pet_files, dx_group=pet_groups,
                  mmscores=pet_mmscores, subjects=remaining_subjects)
-
 
 def fetch_adni_petmr():
     """Returns paths of the intersection between PET and FMRI datasets
