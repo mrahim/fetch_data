@@ -99,21 +99,18 @@ def fetch_adni_rs_fmri():
                  mmscores=mmscores, subjects=subjects)
 
 
-def fetch_adni_rs_fmri_conn(folder):
+def fetch_adni_rs_fmri_conn(filename):
     """Returns paths of ADNI rs-fMRI processed connectivity
+    for a given npy file with shape : n_subjects x n_voxels x n_rois
     """
     FEAT_DIR = set_features_base_dir()
-    FMRI_DIR = os.path.join(FEAT_DIR, 'smooth_preproc', folder)
+    conn_file = os.path.join(FEAT_DIR, 'smooth_preproc', filename)
+    if not os.path.isfile(conn_file):
+        raise OSError('Connectivity data file not found !')
     dataset = fetch_adni_petmr()
     subj_list = dataset['subjects']
     
-    ### load fMRI features
-    X = []
-    for i in np.arange(len(subj_list)):
-        X.append(np.load(os.path.join(FMRI_DIR, subj_list[i]+'.npz'))['corr'])
-    X = np.array(X)
-    
-    return Bunch(fmri_data=X,
+    return Bunch(fmri_data=conn_file,
                  dx_group=np.array(dataset['dx_group']),
                  mmscores=np.array(dataset['mmscores']),
                  subjects=subj_list)
