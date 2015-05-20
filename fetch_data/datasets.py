@@ -98,6 +98,28 @@ def fetch_adni_rs_fmri():
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
 
+def fetch_adni_baseline_rs_fmri():
+    """ Returns paths of ADNI rs-fMRI 
+    """
+    BASE_DIR = set_data_base_dir('ADNI_baseline_rs_fmri')
+    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, '[0-9]*')))
+    excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
+                                                'excluded_subjects.txt'),
+                                   dtype=str)
+    s_description = pd.read_csv(os.path.join(BASE_DIR,
+                                             'description_file.csv'))
+    func_files = []
+    dx_group = []
+    subjects = []
+    for f in subject_paths:
+        _, subject_id = os.path.split(f)
+        if not subject_id in excluded_subjects:
+            func_files.append(glob.glob(os.path.join(f, 'func', 'wr*.nii'))[0])
+            dx_group.append( \
+            s_description[s_description['Subject ID'] == subject_id]\
+            ['DX Group'].values[0])
+            subjects.append(subject_id[1:])
+    return Bunch(func=func_files, dx_group=dx_group, subjects=subjects)
 
 def fetch_adni_rs_fmri_conn(filename):
     """Returns paths of ADNI rs-fMRI processed connectivity
