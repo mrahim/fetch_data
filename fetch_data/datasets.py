@@ -98,6 +98,36 @@ def fetch_adni_rs_fmri():
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
 
+
+def fetch_adni_longitudinal_rs_fmri():
+    """ Returns paths of ADNI rs-fMRI
+    """
+    BASE_DIR = set_data_base_dir('ADNI_longitudinal_rs_fmri')
+    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 'I[0-9]*')))
+    excluded_images = np.loadtxt(os.path.join(BASE_DIR,
+                                                'excluded_subjects.txt'),
+                                   dtype=str)
+    s_description = pd.read_csv(os.path.join(BASE_DIR,
+                                             'description_file.csv'))
+    func_files = []
+    dx_group = []
+    subjects = []
+    images = []
+    for f in subject_paths:
+        _, image_id = os.path.split(f)
+        if not image_id in excluded_images:
+            func_files.append(glob.glob(os.path.join(f, 'func', 'wr*.nii'))[0])
+            dx_group.append( \
+            s_description[s_description['Image_ID'] == image_id]\
+            ['DX_Group'].values[0])
+            images.append(image_id)
+            subjects.append(\
+            s_description[s_description['Image_ID'] == image_id]\
+            ['Subject_ID'].values[0])
+    return Bunch(func=func_files, dx_group=dx_group,
+                 subjects=subjects, images=images)
+    
+
 def fetch_adni_baseline_rs_fmri():
     """ Returns paths of ADNI rs-fMRI 
     """
@@ -231,6 +261,8 @@ def set_group_indices(dx_group):
     """
     dx_group = np.array(dx_group)
     idx = {}
-    for g in ['AD', 'LMCI', 'EMCI', 'Normal']:
+    for g in ['AD', 'MCI', 'LMCI', 'EMCI', 'Normal']:
         idx[g] = np.where(dx_group == g)[0]
+    for g in ['EMCI', 'LMCI']:
+        idx['MCI'] = np.hstack((idx['MCI'], idx[g]))
     return idx
