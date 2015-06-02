@@ -99,10 +99,13 @@ def fetch_adni_rs_fmri():
                  mmscores=mmscores, subjects=subjects)
 
 
-def fetch_adni_longitudinal_rs_fmri():
+def fetch_adni_longitudinal_rs_fmri_DARTEL():
+    return fetch_adni_longitudinal_rs_fmri('ADNI_longitudinal_rs_fmri_DARTEL')
+
+def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri'):
     """ Returns paths of ADNI rs-fMRI
     """
-    BASE_DIR = set_data_base_dir('ADNI_longitudinal_rs_fmri')
+    BASE_DIR = set_data_base_dir(dirname)
     subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 'I[0-9]*')))
     excluded_images = np.loadtxt(os.path.join(BASE_DIR,
                                                 'excluded_subjects.txt'),
