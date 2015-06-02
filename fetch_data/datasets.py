@@ -98,11 +98,12 @@ def fetch_adni_rs_fmri():
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
 
-
 def fetch_adni_longitudinal_rs_fmri_DARTEL():
-    return fetch_adni_longitudinal_rs_fmri('ADNI_longitudinal_rs_fmri_DARTEL')
+    return fetch_adni_longitudinal_rs_fmri('ADNI_longitudinal_rs_fmri_DARTEL',
+                                           'resampled*.nii')
 
-def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri'):
+def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
+                                    prefix='wr*.nii'):
     """ Returns paths of ADNI rs-fMRI
     """
     BASE_DIR = set_data_base_dir(dirname)
@@ -119,7 +120,7 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri'):
     for f in subject_paths:
         _, image_id = os.path.split(f)
         if not image_id in excluded_images:
-            func_files.append(glob.glob(os.path.join(f, 'func', 'wr*.nii'))[0])
+            func_files.append(glob.glob(os.path.join(f, 'func', prefix))[0])
             dx_group.append( \
             s_description[s_description['Image_ID'] == image_id]\
             ['DX_Group'].values[0])
