@@ -269,4 +269,7 @@ def set_group_indices(dx_group):
         idx[g] = np.where(dx_group == g)[0]
     for g in ['EMCI', 'LMCI']:
         idx['MCI'] = np.hstack((idx['MCI'], idx[g]))
+    idx['AD-rest'] = np.hstack((idx['MCI'], idx['Normal']))
+    idx['MCI-rest'] = np.hstack((idx['AD'], idx['Normal']))
+    idx['Normal-rest'] = np.hstack((idx['AD'], idx['MCI']))
     return idx
