@@ -98,6 +98,7 @@ def fetch_adni_rs_fmri():
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
 
+
 def fetch_adni_longitudinal_rs_fmri_DARTEL():
     return fetch_adni_longitudinal_rs_fmri('ADNI_longitudinal_rs_fmri_DARTEL',
                                            'resampled*.nii')
@@ -171,6 +172,39 @@ def fetch_adni_rs_fmri_conn(filename):
                  mmscores=np.array(dataset['mmscores']),
                  subjects=subj_list)
 
+
+def fetch_adni_longitudinal_fdg_pet():
+    """Returns paths of longitudinal ADNI FDG-PET
+    """
+    
+    BASE_DIR = set_data_base_dir('ADNI_longitudinal_fdg_pet')
+    
+    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, '[0-9]*')))
+    
+    description = pd.read_csv(os.path.join(BASE_DIR,
+                                           'description_file.csv'))
+    
+    pet_files = [ sorted(glob.glob(os.path.join(subject_path,
+                                                'pet', 'wr*.nii'))) \
+                  for subject_path in subject_paths ]
+    pet_files_all = []
+    for pet_file in pet_files:
+        pet_files_all.extend(pet_file)
+    
+    images = [ os.path.split(pet_file)[-1].split('_')[-1][:-4] \
+               for pet_file in pet_files_all ]
+    
+    dx_group = [ description[description.Image_ID == image].DX_Group.values[0] \
+                 for image in images]
+
+    subjects = [ description[description.Image_ID == image].Subject_ID.values[0] \
+                 for image in images]
+
+    ages = [ description[description.Image_ID == image].Age.values[0] \
+                 for image in images]
+
+    return Bunch(pet=pet_files, pet_all=pet_files_all, dx_group=dx_group,
+                 subjects=subjects, images=images, ages=ages)
 
 def fetch_adni_fdg_pet():
     """Returns paths of ADNI baseline FDG-PET
