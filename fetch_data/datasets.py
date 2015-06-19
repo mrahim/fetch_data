@@ -181,30 +181,33 @@ def fetch_adni_longitudinal_fdg_pet():
     
     subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, '[0-9]*')))
     
+    subjects = [ os.path.split(subject_path)[-1] \
+                 for subject_path in subject_paths ]
+    
     description = pd.read_csv(os.path.join(BASE_DIR,
                                            'description_file.csv'))
     
     pet_files = [ sorted(glob.glob(os.path.join(subject_path,
                                                 'pet', 'wr*.nii'))) \
                   for subject_path in subject_paths ]
+    idx = [0]
     pet_files_all = []
     for pet_file in pet_files:
+        idx.append(idx[-1] + len(pet_file))
         pet_files_all.extend(pet_file)
     
     images = [ os.path.split(pet_file)[-1].split('_')[-1][:-4] \
                for pet_file in pet_files_all ]
     
-    dx_group = [ description[description.Image_ID == image].DX_Group.values[0] \
-                 for image in images]
-
-    subjects = [ description[description.Image_ID == image].Subject_ID.values[0] \
-                 for image in images]
-
-    ages = [ description[description.Image_ID == image].Age.values[0] \
-                 for image in images]
-
-    return Bunch(pet=pet_files, pet_all=pet_files_all, dx_group=dx_group,
-                 subjects=subjects, images=images, ages=ages)
+    df = description[description['Image_ID'].isin(images)]
+    dx_group_all = list(df['DX_Group'])
+    dx_conv_all = list(df['DX_Conv'])
+    subjects_all = list(df['Subject_ID'])
+    ages = list(df['Age'])
+    
+    return Bunch(pet=pet_files, pet_all=pet_files_all, dx_group=dx_group_all,
+                 dx_conv=dx_conv_all, subjects=subjects, subjects_idx=idx,
+                 images=images, ages=ages, subjects_all=subjects_all)
 
 def fetch_adni_fdg_pet():
     """Returns paths of ADNI baseline FDG-PET
@@ -291,6 +294,8 @@ def fetch_adni_masks():
                                        'mask_pet.nii.gz'),
                  mask_fmri=os.path.join(FEAT_DIR, 'masks',
                                         'mask_fmri.nii.gz'),
+                 mask_pet_longitudinal=os.path.join(FEAT_DIR, 'masks',
+                                                    'mask_longitudinal_fdg_pet.nii.gz'),
                  mask_petmr=os.path.join(FEAT_DIR, 'masks',
                                          'mask_petmr.nii.gz'))
 
@@ -299,7 +304,7 @@ def set_group_indices(dx_group):
     """
     dx_group = np.array(dx_group)
     idx = {}
-    for g in ['AD', 'MCI', 'LMCI', 'EMCI', 'Normal']:
+    for g in ['AD', 'MCI', 'LMCI', 'EMCI', 'Normal', 'MCI-Converter', 'Normal->MCI']:
         idx[g] = np.where(dx_group == g)[0]
     for g in ['EMCI', 'LMCI']:
         idx['MCI'] = np.hstack((idx['MCI'], idx[g]))
