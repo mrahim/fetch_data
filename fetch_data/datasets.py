@@ -205,8 +205,18 @@ def fetch_adni_longitudinal_fdg_pet():
     subjects_all = list(df['Subject_ID'])
     ages = list(df['Age'])
     
-    return Bunch(pet=pet_files, pet_all=pet_files_all, dx_group=dx_group_all,
-                 dx_conv=dx_conv_all, subjects=subjects, subjects_idx=idx,
+    imgs = np.array(pet_files_all)
+    imgs_baseline = np.array([ imgs[i] for i in idx[:-1] ])
+    dxconv_baseline = [ dx_conv_all[i] for i in idx[:-1] ]
+    dx_baseline = set_group_indices(dxconv_baseline)    
+    
+    
+    return Bunch(pet=pet_files, pet_all=pet_files_all,
+                 pet_baseline=imgs_baseline,
+                 dx_group=dx_group_all, dx_conv=dx_conv_all,
+                 dx_list_baseline=dxconv_baseline,
+                 dx_group_baseline=dx_baseline,
+                 subjects=subjects, subjects_idx=idx,
                  images=images, ages=ages, subjects_all=subjects_all)
 
 def fetch_adni_fdg_pet():
