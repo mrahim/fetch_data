@@ -195,15 +195,15 @@ def fetch_adni_longitudinal_fdg_pet():
     for pet_file in pet_files:
         idx.append(idx[-1] + len(pet_file))
         pet_files_all.extend(pet_file)
-    
+
     images = [ os.path.split(pet_file)[-1].split('_')[-1][:-4] \
                for pet_file in pet_files_all ]
     
     df = description[description['Image_ID'].isin(images)]
-    dx_group_all = list(df['DX_Group'])
-    dx_conv_all = list(df['DX_Conv'])
-    subjects_all = list(df['Subject_ID'])
-    ages = list(df['Age'])
+    dx_group_all = np.array(df['DX_Group'])
+    dx_conv_all = np.array(df['DX_Conv'])
+    subjects_all = np.array(df['Subject_ID'])
+    ages = np.array(df['Age'])
     
     imgs = np.array(pet_files_all)
     imgs_baseline = np.array([ imgs[i] for i in idx[:-1] ])
@@ -216,7 +216,7 @@ def fetch_adni_longitudinal_fdg_pet():
                  dx_group=dx_group_all, dx_conv=dx_conv_all,
                  dx_list_baseline=dxconv_baseline,
                  dx_group_baseline=dx_baseline,
-                 subjects=subjects, subjects_idx=idx,
+                 subjects=subjects, subjects_idx=np.array(idx),
                  images=images, ages=ages, subjects_all=subjects_all)
 
 def fetch_adni_fdg_pet():
