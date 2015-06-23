@@ -322,3 +322,28 @@ def set_group_indices(dx_group):
     idx['MCI-rest'] = np.hstack((idx['AD'], idx['Normal']))
     idx['Normal-rest'] = np.hstack((idx['AD'], idx['MCI']))
     return idx
+
+
+def fetch_atlas(atlas_name):
+    """Retruns selected atlas path
+        atlas_names values are : msdl, harvard_oxford, juelich, mayo ...
+    """
+    from nilearn.datasets import fetch_msdl_atlas
+    CACHE_DIR = set_cache_base_dir()
+    if atlas_name == 'msdl':
+        atlas = fetch_msdl_atlas()['maps']
+    elif atlas_name == 'harvard_oxford':
+        atlas = os.path.join(CACHE_DIR, 'atlas',
+                             'HarvardOxford-cortl-maxprob-thr0-2mm.nii.gz')
+    elif atlas_name == 'juelich':
+        atlas = os.path.join(CACHE_DIR, 'atlas',
+                             'Juelich-maxprob-thr0-2mm.nii.gz')
+    elif atlas_name == 'mayo':
+        atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_68_rois.nii.gz')
+    elif atlas_name == 'canica':
+	atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_canica_61_rois.nii.gz')
+    elif atlas_name == 'canica141':
+	atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_canica_141_rois.nii.gz')
+    elif atlas_name == 'tvmsdl':
+        atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_tv_msdl.nii.gz')
+    return atlas
