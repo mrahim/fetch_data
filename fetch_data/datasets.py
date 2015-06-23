@@ -346,4 +346,6 @@ def fetch_atlas(atlas_name):
 	atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_canica_141_rois.nii.gz')
     elif atlas_name == 'tvmsdl':
         atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_tv_msdl.nii.gz')
+    elif atlas_name == 'kmeans':
+        atlas = os.path.join(CACHE_DIR, 'atlas', 'atlas_kmeans.nii.gz')
     return atlas
