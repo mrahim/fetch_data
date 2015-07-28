@@ -118,10 +118,12 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
     dx_group = []
     subjects = []
     images = []
+    motions = []
     for f in subject_paths:
         _, image_id = os.path.split(f)
         if not image_id in excluded_images:
             func_files.append(glob.glob(os.path.join(f, 'func', prefix))[0])
+            motions.append(glob.glob(os.path.join(f, 'func', 'rp_*.txt'))[0])
             dx_group.append( \
             s_description[s_description['Image_ID'] == image_id]\
             ['DX_Group'].values[0])
@@ -130,9 +132,8 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
             s_description[s_description['Image_ID'] == image_id]\
             ['Subject_ID'].values[0])
     return Bunch(func=func_files, dx_group=dx_group,
-                 subjects=subjects, images=images)
+                 subjects=subjects, images=images, motions=motions)
     
-
 def fetch_adni_baseline_rs_fmri():
     """ Returns paths of ADNI rs-fMRI 
     """
