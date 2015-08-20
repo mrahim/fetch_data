@@ -10,6 +10,7 @@
 import os
 import glob
 import numpy as np
+import pandas as pd
 import nibabel as nib
 from datetime import date
 
@@ -31,6 +32,40 @@ def array_to_nii(data, mask):
     data_ = np.zeros(mask_img.shape)
     data_[mask_img.get_data().astype(np.bool)] = data
     return nib.Nifti1Image(data_, mask_img.get_affine())
+
+
+def _get_subjects_and_description(base_dir,
+                                  prefix,
+                                  exclusion_file='excluded_subjects.txt',
+                                  description_csv='description_file.csv'):
+    """  Returns list of subjects and phenotypic dataframe
+    """
+
+    # load files and set dirs
+    BASE_DIR = _set_data_base_dir(base_dir)
+    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, prefix)))
+
+    fname = os.path.join(BASE_DIR, exclusion_file)
+    if not os.path.isfile(fname):
+        raise OSError('File not found ...')
+    excluded_subjects = []
+    if os.stat(fname).st_size > 0:
+        excluded_subjects = np.loadtxt(fname, dtype=str)
+
+    fname = os.path.join(BASE_DIR, description_csv)
+    if not os.path.isfile(fname):
+        raise OSError('File not found ...')
+    description = pd.read_csv(fname)
+
+    # exclude bad QC subjects
+    excluded_paths = np.array(map(lambda x: os.path.join(BASE_DIR, x),
+                                  excluded_subjects))
+    subject_paths = np.setdiff1d(subject_paths, excluded_paths)
+
+    # get subject_id
+    subjects = [os.path.split(s)[-1] for s in subject_paths]
+
+    return subjects, subject_paths, description
 
 
 def _glob_subject_img(subject_path, suffix, first_img=False):

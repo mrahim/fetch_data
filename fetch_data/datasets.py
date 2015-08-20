@@ -13,35 +13,20 @@ import pandas as pd
 from datetime import date
 from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
-                          _set_cache_base_dir, _glob_subject_img)
+                          _set_cache_base_dir, _glob_subject_img,
+                          _set_group_indices, _get_subjects_and_description)
 
 
 def fetch_adni_rs_fmri():
     """ Returns paths of ADNI resting-state fMRI
     """
 
-    # load files and set dirs
-    BASE_DIR = _set_data_base_dir('ADNI_baseline_rs_fmri_mri')
-    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 's[0-9]*')))
-
-    fname = os.path.join(BASE_DIR, 'excluded_subjects.txt')
-    if not os.path.isfile(fname):
-        raise OSError('File not found ...')
-    excluded_subjects = []
-    if os.stat(fname).st_size > 0:
-        excluded_subjects = np.loadtxt(fname, dtype=str)
-
-    fname = os.path.join(BASE_DIR, 'description_file.csv')
-    if not os.path.isfile(fname):
-        raise OSError('File not found ...')
-    description = pd.read_csv(fname)
-
-    # exclude bad QC subjects
-    for e in excluded_subjects:
-        subject_paths.remove(os.path.join(BASE_DIR, e))
-
-    # get subject_id
-    subjects = [os.path.split(s)[-1][1:] for s in subject_paths]
+    # get file paths and description
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                         base_dir='ADNI_baseline_rs_fmri_mri',
+                                         prefix='s[0-9]*')
+    # get the correct subject_id
+    subjects = [s[1:] for s in subjects]
 
     # get func files
     func_files = map(lambda x: _glob_subject_img(x, suffix='func/swr*.nii',
@@ -108,28 +93,9 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
     """ Returns paths of ADNI rs-fMRI
     """
 
-    # load files and set dirs
-    BASE_DIR = _set_data_base_dir(dirname)
-    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 'I[0-9]*')))
-
-    fname = os.path.join(BASE_DIR, 'excluded_subjects.txt')
-    if not os.path.isfile(fname):
-        raise OSError('File not found ...')
-    excluded_images = []
-    if os.stat(fname).st_size > 0:
-        excluded_images = np.loadtxt(fname, dtype=str)
-
-    fname = os.path.join(BASE_DIR, 'description_file.csv')
-    if not os.path.isfile(fname):
-        raise OSError('File not found ...')
-    description = pd.read_csv(fname)
-
-    # exclude bad QC subjects
-    for e in excluded_images:
-        subject_paths.remove(os.path.join(BASE_DIR, e))
-
-    # get image_id
-    images = [os.path.split(s)[-1] for s in subject_paths]
+    # get file paths and description
+    images, subject_paths, description = _get_subjects_and_description(
+                                         base_dir=dirname, prefix='I[0-9]*')
 
     # get func files
     func_files = map(lambda x: _glob_subject_img(x, suffix='func/' + prefix,
@@ -153,24 +119,20 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
 def fetch_adni_baseline_rs_fmri():
     """ Returns paths of ADNI rs-fMRI
     """
-    BASE_DIR = _set_data_base_dir('ADNI_baseline_rs_fmri')
-    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, '[0-9]*')))
-    excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
-                                                'excluded_subjects.txt'),
-                                   dtype=str)
-    s_description = pd.read_csv(os.path.join(BASE_DIR,
-                                             'description_file.csv'))
-    func_files = []
-    dx_group = []
-    subjects = []
-    for f in subject_paths:
-        _, subject_id = os.path.split(f)
-        if subject_id not in excluded_subjects:
-            func_files.append(glob.glob(os.path.join(f, 'func', 'wr*.nii'))[0])
-            dx_group.append(
-                s_description[s_description['Subject ID'] == subject_id]
-                ['DX Group'].values[0])
-            subjects.append(subject_id[1:])
+
+    # get file paths and description
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                           base_dir='ADNI_baseline_rs_fmri',
+                                           prefix='[0-9]*')
+
+    # get func files
+    func_files = map(lambda x: _glob_subject_img(x, suffix='func/wr*.nii',
+                                                 first_img=True),
+                     subject_paths)
+
+    # get phenotype from csv
+    df = description[description['Subject_ID'].isin(subjects)]
+    dx_group = np.array(df['DX_Group'])
 
     return Bunch(func=func_files, dx_group=dx_group, subjects=subjects)
 
@@ -179,6 +141,7 @@ def fetch_adni_rs_fmri_conn(filename):
     """Returns paths of ADNI rs-fMRI processed connectivity
     for a given npy file with shape : n_subjects x n_voxels x n_rois
     """
+
     FEAT_DIR = _set_data_base_dir('features')
     conn_file = os.path.join(FEAT_DIR, 'smooth_preproc', filename)
     if not os.path.isfile(conn_file):
@@ -196,15 +159,15 @@ def fetch_adni_longitudinal_fdg_pet():
     """Returns paths of longitudinal ADNI FDG-PET
     """
 
-    BASE_DIR = _set_data_base_dir('ADNI_longitudinal_fdg_pet')
-    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, '[0-9]*')))
-    subjects = [os.path.split(subject_path)[-1]
-                for subject_path in subject_paths]
-    description = pd.read_csv(os.path.join(BASE_DIR,
-                                           'description_file.csv'))
-    pet_files = [sorted(glob.glob(os.path.join(
-                 subject_path, 'pet', 'wr*.nii')))
-                 for subject_path in subject_paths]
+    # get file paths and description
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                          base_dir='ADNI_longitudinal_fdg_pet',
+                                          prefix='[0-9]*')
+
+    # get pet files
+    pet_files = map(lambda x: _glob_subject_img(x, suffix='pet/wr*.nii',
+                                                first_img=False),
+                    subject_paths)
     idx = [0]
     pet_files_all = []
     for pet_file in pet_files:
@@ -214,16 +177,18 @@ def fetch_adni_longitudinal_fdg_pet():
     images = [os.path.split(pet_file)[-1].split('_')[-1][:-4]
               for pet_file in pet_files_all]
 
+    # get phenotype from csv
     df = description[description['Image_ID'].isin(images)]
     dx_group_all = np.array(df['DX_Group'])
     dx_conv_all = np.array(df['DX_Conv'])
     subjects_all = np.array(df['Subject_ID'])
     ages = np.array(df['Age'])
 
+    # get baseline data
     imgs = np.array(pet_files_all)
     imgs_baseline = np.array([imgs[i] for i in idx[:-1]])
     dxconv_baseline = [dx_conv_all[i] for i in idx[:-1]]
-    dx_baseline = set_group_indices(dxconv_baseline)
+    dx_baseline = _set_group_indices(dxconv_baseline)
 
     return Bunch(pet=pet_files, pet_all=pet_files_all,
                  pet_baseline=imgs_baseline,
@@ -237,28 +202,22 @@ def fetch_adni_longitudinal_fdg_pet():
 def fetch_adni_fdg_pet():
     """Returns paths of ADNI baseline FDG-PET
     """
-    BASE_DIR = _set_data_base_dir('ADNI_baseline_fdg_pet')
-    subject_paths = sorted(glob.glob(os.path.join(BASE_DIR, 's[0-9]*')))
-    excluded_subjects = np.loadtxt(os.path.join(BASE_DIR,
-                                                'excluded_subjects.txt'),
-                                   dtype=str)
-    s_description = pd.read_csv(os.path.join(BASE_DIR,
-                                             'description_file.csv'))
-    pet_files = []
-    dx_group = []
-    mmscores = []
-    subjects = []
-    for f in subject_paths:
-        _, subject_id = os.path.split(f)
-        if subject_id not in excluded_subjects:
-            pet_files.append(glob.glob(os.path.join(f, 'pet', 'w*.nii'))[0])
-            dx_group.append(
-                s_description[s_description.Subject_ID == subject_id[1:]]
-                .DX_Group.values[0])
-            subjects.append(subject_id[1:])
-            mmscores.append(
-                s_description[s_description.Subject_ID == subject_id[1:]]
-                .MMSCORE.values[0])
+
+    # get file paths and description
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                          base_dir='ADNI_baseline_fdg_pet',
+                                          prefix='s[0-9]*')
+
+    # get the correct subject_id
+    subjects = [s[1:] for s in subjects]
+
+    # get pet files
+    pet_files = map(lambda x: _glob_subject_img(x, suffix='pet/w*.nii',
+                                                first_img=True), subject_paths)
+    # get phenotype from csv
+    df = description[description['Subject_ID'].isin(subjects)]
+    dx_group = np.array(df['DX_Group'])
+    mmscores = np.array(df['MMSCORE'])
 
     return Bunch(pet=pet_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
