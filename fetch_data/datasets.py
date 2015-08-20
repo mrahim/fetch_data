@@ -63,18 +63,22 @@ def fetch_adni_longitudinal_hippocampus_volume():
     dx = pd.read_csv(os.path.join(BASE_DIR, 'DXSUM_PDXCONV_ADNIALL.csv'))
     fs = pd.read_csv(os.path.join(BASE_DIR, 'UCSFFSX51_05_20_15.csv'))
 
-    # Extract hippocampus values
+    # extract hippocampus numerical values
     column_idx = np.arange(131, 147)
     cols = ['ST' + str(c) + 'HS' for c in column_idx]
     hipp = fs[cols].values
     idx_num = np.array([~np.isnan(h).all() for h in hipp])
     hipp = hipp[idx_num, :]
+
+    # extract roster id
     rids = fs['RID'].values[idx_num]
+    # get subject id
     ptids = [_rid_to_ptid(rid, roster) for rid in rids]
+    # extract exam date
     exams = fs['EXAMDATE'].values[idx_num]
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
 
-    # Extract diagnosis
+    # extract diagnosis
     dx_ind = np.array(map(_get_dx, rids, [dx]*len(rids), exams))
     dx_group = dx_list[dx_ind]
 
