@@ -197,6 +197,7 @@ def _get_dx(rid, dx, exam=None, viscode=None):
     else:
         return -4
 
+
 def _set_group_indices(dx_group):
     """Returns indices for each clinical group
     """
@@ -210,16 +211,19 @@ def _set_group_indices(dx_group):
     idx['AD-rest'] = np.hstack((idx['MCI'], idx['Normal']))
     idx['MCI-rest'] = np.hstack((idx['AD'], idx['Normal']))
     idx['Normal-rest'] = np.hstack((idx['AD'], idx['MCI']))
-
     return idx
+
 
 def _set_classification_data(features, dx_group, groups):
     """Returns X and y for classification according to the chosen groups
     """
+    # get group indices
     dx_idx = _set_group_indices(dx_group)
+    # stack the desired indices
     idx_ = []
     for group in groups:
         idx_.extend(dx_idx[group])
+    # extract corresponding features and classes (binary-only)
     X = features[idx_, :]
     y = np.array([1]*len(dx_idx[groups[0]]) + [0]*len(dx_idx[groups[1]]))
     return X, y
