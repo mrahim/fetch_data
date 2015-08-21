@@ -141,28 +141,61 @@ def _find_closest_exam_date(acq_date, exam_dates):
     return exam_dates[ind], ind
 
 
-def _get_dx(rid, dx, exam=None):
-    """Returns all diagnoses for a given
-    rid and sid"""
+def _diff_visits(vis_1, vis_2):
+    """Returns a numerical difference between two visits
+    """
+    # First, we convert visits
+    v = map(lambda x: 0 if(x in ['bl', 'sc']) else int(x[1:]), [vis_1, vis_2])
+    # Then, we substract
+    return np.absolute(v[0] - v[1])
 
-    dates = dx[dx.RID == rid]['EXAMDATE'].values
-    exam_dates = [date(int(d[:4]), int(d[5:7]), int(d[8:])) for d in dates]
+
+def _find_closest_exam_code(viscode, exam_codes):
+    """Returns the indice and the code of the current viscode
+    """
+    
+    ind = np.argwhere(exam_codes == viscode)
+    if len(ind) > 0:
+        ind = ind[0, 0]
+    else:
+        diff = [_diff_visits(viscode, e) for e in exam_codes]
+        ind = np.argmin(diff)
+    return viscode, ind
+
+
+def _get_dx(rid, dx, exam=None, viscode=None):
+    """Returns all diagnoses for a given
+    rid, depending on exam or viscode (mutually exclusive)
+    """
+
+    if exam is not None and viscode is not None:
+        raise ValueError('Both exam and viscode are set !')
+    
+    if exam is not None:
+        dates = dx[dx.RID == rid]['EXAMDATE'].values
+        exam_dates = [date(int(d[:4]), int(d[5:7]), int(d[8:])) for d in dates]
+    elif viscode is not None:
+        if viscode[0] == 'v': #ADNI1
+            exam_codes = dx[dx.RID == rid]['VISCODE'].values
+        else: #ADNI GO/2
+            exam_codes = dx[dx.RID == rid]['VISCODE2'].values
 
     # DXCHANGE
     change = dx[dx.RID == rid]['DXCHANGE'].values
     curren = dx[dx.RID == rid]['DXCURREN'].values
-
     # change, curren have the same length
     dxchange = [int(np.nanmax([change[k], curren[k]]))
                 for k in range(len(curren))]
 
     if exam is not None and len(exam_dates) > 0:
         exam_date, ind = _find_closest_exam_date(exam, exam_dates)
-        # TODO : return exam_date?
+        # TODO : return exam_date or exam_code ?
+        return dxchange[ind]
+    elif viscode is not None and len(exam_codes) > 0:
+        exam_code, ind = _find_closest_exam_code(viscode, exam_codes)
         return dxchange[ind]
     else:
         return -4
-
 
 def _set_group_indices(dx_group):
     """Returns indices for each clinical group
@@ -179,3 +212,14 @@ def _set_group_indices(dx_group):
     idx['Normal-rest'] = np.hstack((idx['AD'], idx['MCI']))
 
     return idx
+
+def _set_classification_data(features, dx_group, groups):
+    """Returns X and y for classification according to the chosen groups
+    """
+    dx_idx = _set_group_indices(dx_group)
+    idx_ = []
+    for group in groups:
+        idx_.extend(dx_idx[group])
+    X = features[idx_, :]
+    y = np.array([1]*len(dx_idx[groups[0]]) + [0]*len(dx_idx[groups[1]]))
+    return X, y

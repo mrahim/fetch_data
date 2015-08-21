@@ -15,6 +15,18 @@ from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
                           _set_group_indices, _get_subjects_and_description)
 
 
+DX_LIST = np.array(['None',
+                    'Normal',
+                    'MCI',
+                    'AD',
+                    'Normal->MCI',
+                    'MCI->AD',
+                    'Normal->AD',
+                    'MCI->Normal',
+                    'AD->MCI',
+                    'AD->Normal'])
+
+
 def fetch_adni_rs_fmri():
     """ Returns paths of ADNI resting-state fMRI
     """
@@ -40,22 +52,43 @@ def fetch_adni_rs_fmri():
                  mmscores=mmscores, subjects=subjects)
 
 
+def fetch_adni_longitudinal_csf_biomarker():
+    """ Returns longitudinal csf measures
+    """
+    BASE_DIR = _set_data_base_dir('ADNI_csv')
+    roster = pd.read_csv(os.path.join(BASE_DIR, 'ROSTER.csv'))
+    dx = pd.read_csv(os.path.join(BASE_DIR, 'DXSUM_PDXCONV_ADNIALL.csv'))
+    csf_files = ['UPENNBIOMK.csv', 'UPENNBIOMK2.csv', 'UPENNBIOMK3.csv',
+                 'UPENNBIOMK4_09_06_12.csv', 'UPENNBIOMK5_10_31_13.csv',
+                 'UPENNBIOMK6_07_02_13.csv', 'UPENNBIOMK7.csv',
+                 'UPENNBIOMK8.csv']
+    cols = ['RID', 'VISCODE', 'ABETA', 'PTAU', 'TAU']
+    # 3,4,5,7,8
+    csf = pd.DataFrame()
+    for csf_file in csf_files[2:]:
+        fs = pd.read_csv(os.path.join(BASE_DIR, csf_file))
+        csf = csf.append(fs[cols])
+
+    # remove nans from csf values
+    biom = csf[cols[2:]].values
+    idx = np.array([~np.isnan(v).any() for v in biom])
+    biom = biom[idx]
+    # get phenotype
+    vcodes = csf['VISCODE'].values[idx]
+    rids = csf['RID'].values[idx]
+    ptids = map(lambda x: _rid_to_ptid(x, roster), rids)
+    # get diagnosis
+    dx_group = map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
+                   rids, vcodes)
+
+    return Bunch(dx_group=dx_group, subjects=ptids, csf=biom, exam_code=vcodes)
+
+
 def fetch_adni_longitudinal_hippocampus_volume():
     """ Returns longitudinal hippocampus measures
     """
 
     BASE_DIR = _set_data_base_dir('ADNI_csv')
-
-    dx_list = np.array(['None',
-                        'Normal',
-                        'MCI',
-                        'AD',
-                        'Normal->MCI',
-                        'MCI->AD',
-                        'Normal->AD',
-                        'MCI->Normal',
-                        'AD->MCI',
-                        'AD->Normal'])
 
     roster = pd.read_csv(os.path.join(BASE_DIR, 'ROSTER.csv'))
     dx = pd.read_csv(os.path.join(BASE_DIR, 'DXSUM_PDXCONV_ADNIALL.csv'))
@@ -78,7 +111,7 @@ def fetch_adni_longitudinal_hippocampus_volume():
 
     # extract diagnosis
     dx_ind = np.array(map(_get_dx, rids, [dx]*len(rids), exams))
-    dx_group = dx_list[dx_ind]
+    dx_group = DX_LIST[dx_ind]
 
     return Bunch(dx_group=dx_group, subjects=ptids, hipp=hipp, exam_date=exams)
 
