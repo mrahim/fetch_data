@@ -26,6 +26,7 @@ DX_LIST = np.array(['None',
                     'AD->MCI',
                     'AD->Normal'])
 
+
 def fetch_adni_rs_fmri():
     """ Returns paths of ADNI resting-state fMRI
     """

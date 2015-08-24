@@ -225,5 +225,5 @@ def _set_classification_data(features, dx_group, groups):
         idx_.extend(dx_idx[group])
     # extract corresponding features and classes (binary-only)
     X = features[idx_, :]
-    y = np.array([1]*len(dx_idx[groups[0]]) + [0]*len(dx_idx[groups[1]]))
+    y = np.array([1]*len(dx_idx[groups[0]]) + [-1]*len(dx_idx[groups[1]]))
     return X, y
