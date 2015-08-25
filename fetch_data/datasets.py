@@ -81,7 +81,8 @@ def fetch_adni_longitudinal_csf_biomarker():
     dx_group = map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
                    rids, vcodes)
 
-    return Bunch(dx_group=dx_group, subjects=ptids, csf=biom, exam_code=vcodes)
+    return Bunch(dx_group=dx_group, subjects=np.array(ptids),
+                 csf=biom, exam_code=vcodes)
 
 
 def fetch_adni_longitudinal_hippocampus_volume():
@@ -113,7 +114,8 @@ def fetch_adni_longitudinal_hippocampus_volume():
     dx_ind = np.array(map(_get_dx, rids, [dx]*len(rids), exams))
     dx_group = DX_LIST[dx_ind]
 
-    return Bunch(dx_group=dx_group, subjects=ptids, hipp=hipp, exam_date=exams)
+    return Bunch(dx_group=dx_group, subjects=np.array(ptids),
+                 hipp=hipp, exam_date=exams)
 
 
 def fetch_adni_longitudinal_rs_fmri_DARTEL():
