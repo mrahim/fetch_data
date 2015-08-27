@@ -145,7 +145,7 @@ def _diff_visits(vis_1, vis_2):
     """Returns a numerical difference between two visits
     """
     # First, we convert visits
-    v = map(lambda x: 0 if(x in ['bl', 'sc']) else int(x[1:]), [vis_1, vis_2])
+    v = map(lambda x: 0 if(x in ['bl', 'sc', 'uns1']) else int(x[1:]), [vis_1, vis_2])
     # Then, we substract
     return np.absolute(v[0] - v[1])
 
