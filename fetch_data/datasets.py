@@ -176,6 +176,8 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
     df = description[description['Image_ID'].isin(images)]
     dx_group = np.array(df['DX_Group'])
     subjects = np.array(df['Subject_ID'])
+    exams = np.array(df['EXAM_DATE'])
+    exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
 
     return Bunch(func=func_files, dx_group=dx_group,
                  subjects=subjects, images=images, motions=motions)

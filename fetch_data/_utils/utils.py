@@ -170,14 +170,14 @@ def _get_dx(rid, dx, exam=None, viscode=None):
 
     if exam is not None and viscode is not None:
         raise ValueError('Both exam and viscode are set !')
-    
+
     if exam is not None:
         dates = dx[dx.RID == rid]['EXAMDATE'].values
         exam_dates = [date(int(d[:4]), int(d[5:7]), int(d[8:])) for d in dates]
     elif viscode is not None:
-        if viscode[0] == 'v': #ADNI1
+        if viscode[0] == 'v':  # ADNI1
             exam_codes = dx[dx.RID == rid]['VISCODE'].values
-        else: #ADNI GO/2
+        else:  # ADNI GO/2
             exam_codes = dx[dx.RID == rid]['VISCODE2'].values
 
     # DXCHANGE
