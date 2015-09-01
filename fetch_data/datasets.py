@@ -420,3 +420,24 @@ def fetch_atlas(atlas_name):
         raise OSError('Atlas not found !')
 
     return atlas
+
+
+def intersect_datasets(dataset1, dataset2, intersect_on='viscodes'):
+    """Returns the intersection of two dataset Bunches.
+        The output is a dataset (Bunch).
+        The intersection is on patient id and visit code or date
+    """
+    if intersect_on not in ['viscodes', 'exam_dates']:
+        raise ValueError('intersect_on should be either '
+                         'viscodes or exam_dates')
+        return -1
+
+    if 'subjects' not in dataset1.keys() or 'subjects' not in dataset2.keys():
+        raise ValueError('Cannot intersect, Subject ID not found !')
+        return -1
+
+    if (intersect_on not in dataset1.keys() or
+       intersect_on not in dataset2.keys()):
+        raise ValueError('Cannot intersect,' + intersect_on + ' not found !')
+        return -1
+    return 0
