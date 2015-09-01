@@ -52,6 +52,34 @@ def fetch_adni_rs_fmri():
                  mmscores=mmscores, subjects=subjects)
 
 
+def fetch_adni_longitudinal_mmse_score():
+    """ Returns longitudinal mmse scores
+    """
+    BASE_DIR = _set_data_base_dir('ADNI_csv')
+    roster = pd.read_csv(os.path.join(BASE_DIR, 'ROSTER.csv'))
+    dx = pd.read_csv(os.path.join(BASE_DIR, 'DXSUM_PDXCONV_ADNIALL.csv'))
+    fs = pd.read_csv(os.path.join(BASE_DIR, 'MMSE.csv'))
+
+    # extract nans free mmse
+    mmse = fs['MMSCORE'].values
+    idx_num = fs['MMSCORE'].notnull().values
+    mmse = mmse[idx_num]
+
+    # extract roster id
+    rids = fs['RID'].values[idx_num]
+    # get subject id
+    ptids = [_rid_to_ptid(rid, roster) for rid in rids]
+    # extract visit code (don't use EXAMDATE ; null for GO/2)
+    vcodes = fs['VISCODE2'].values
+    vcodes = vcodes[idx_num]
+    # get diagnosis
+    dx_group = map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
+                   rids, vcodes)
+
+    return Bunch(dx_group=dx_group, subjects=np.array(ptids),
+                 mmse=mmse, exam_codes=vcodes)
+
+
 def fetch_adni_longitudinal_csf_biomarker():
     """ Returns longitudinal csf measures
     """
@@ -197,9 +225,11 @@ def fetch_adni_longitudinal_fdg_pet():
     """
 
     # get file paths and description
-    subjects, subject_paths, description = _get_subjects_and_description(
-                                          base_dir='ADNI_longitudinal_fdg_pet',
-                                          prefix='[0-9]*')
+    (subjects,
+     subject_paths,
+     description) = _get_subjects_and_description(
+                    base_dir='ADNI_longitudinal_fdg_pet',
+                    prefix='[0-9]*')
 
     # get pet files
     pet_files = map(lambda x: _glob_subject_img(x, suffix='pet/wr*.nii',
