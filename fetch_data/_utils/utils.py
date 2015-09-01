@@ -145,7 +145,8 @@ def _diff_visits(vis_1, vis_2):
     """Returns a numerical difference between two visits
     """
     # First, we convert visits
-    v = map(lambda x: 0 if(x in ['bl', 'sc', 'uns1']) else int(x[1:]), [vis_1, vis_2])
+    v = map(lambda x: 0 if(x in ['bl', 'sc', 'uns1']) else int(x[1:]),
+            [vis_1, vis_2])
     # Then, we substract
     return np.absolute(v[0] - v[1])
 
@@ -153,7 +154,6 @@ def _diff_visits(vis_1, vis_2):
 def _find_closest_exam_code(viscode, exam_codes):
     """Returns the indice and the code of the current viscode
     """
-    
     ind = np.argwhere(exam_codes == viscode)
     if len(ind) > 0:
         ind = ind[0, 0]
@@ -163,7 +163,22 @@ def _find_closest_exam_code(viscode, exam_codes):
     return viscode, ind
 
 
-def _get_dx(rid, dx, exam=None, viscode=None):
+def _get_vcodes(rid, exam_date, dx):
+    """ Returns visit codes of an exam_date of a subject
+    """
+
+    vcodes = dx[(dx.RID == rid) & (dx.EXAMDATE == exam_date)]['VISCODE'].values
+    vcodes2 = dx[(dx.RID == rid) & (dx.EXAMDATE == exam_date)]['VISCODE2'].values
+
+    if not vcodes.any():
+        vcodes = [np.nan]
+    if not vcodes2.any():
+        vcodes2 = [np.nan]
+
+    return vcodes[0], vcodes2[0]
+
+
+def _get_dx(rid, dx, exam=None, viscode=None, return_code=False):
     """Returns all diagnoses for a given
     rid, depending on exam or viscode (mutually exclusive)
     """
@@ -190,10 +205,16 @@ def _get_dx(rid, dx, exam=None, viscode=None):
     if exam is not None and len(exam_dates) > 0:
         exam_date, ind = _find_closest_exam_date(exam, exam_dates)
         # TODO : return exam_date or exam_code ?
-        return dxchange[ind]
+        if return_code:
+            return exam_date
+        else:
+            return dxchange[ind]
     elif viscode is not None and len(exam_codes) > 0:
         exam_code, ind = _find_closest_exam_code(viscode, exam_codes)
-        return dxchange[ind]
+        if return_code:
+            return exam_code
+        else:
+            return dxchange[ind]
     else:
         return -4
 

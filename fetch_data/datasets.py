@@ -11,8 +11,9 @@ import pandas as pd
 from datetime import date
 from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
-                          _set_cache_base_dir, _glob_subject_img,
-                          _set_group_indices, _get_subjects_and_description)
+                          _set_cache_base_dir, _glob_subject_img, _ptid_to_rid,
+                          _set_group_indices, _get_subjects_and_description,
+                          _get_vcodes)
 
 
 DX_LIST = np.array(['None',
@@ -173,13 +174,25 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
                   subject_paths)
 
     # get phenotype from csv
+    dx = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
+                                  'DXSUM_PDXCONV_ADNIALL.csv'))
+    roster = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
+                                      'ROSTER.csv'))
     df = description[description['Image_ID'].isin(images)]
     dx_group = np.array(df['DX_Group'])
     subjects = np.array(df['Subject_ID'])
     exams = np.array(df['EXAM_DATE'])
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
+    rids = map(lambda s: _ptid_to_rid(s, roster), subjects)
+    exam_dates = map(lambda i: _get_dx(rids[i],
+                                       dx, exams[i],
+                                       viscode=None,
+                                       return_code=True), range(len(rids)))
+    viscodes = map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
+                   range(len(rids)))
 
-    return Bunch(func=func_files, dx_group=dx_group,
+    return Bunch(func=func_files, dx_group=dx_group, viscodes=viscodes,
+                 exam_dates=exam_dates,
                  subjects=subjects, images=images, motions=motions)
 
 
@@ -247,13 +260,28 @@ def fetch_adni_longitudinal_fdg_pet():
               for pet_file in pet_files_all]
 
     # get phenotype from csv
+    dx = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
+                                  'DXSUM_PDXCONV_ADNIALL.csv'))
+    roster = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
+                                      'ROSTER.csv'))
     df = description[description['Image_ID'].isin(images)]
     dx_group_all = np.array(df['DX_Group'])
     dx_conv_all = np.array(df['DX_Conv'])
     subjects_all = np.array(df['Subject_ID'])
     ages = np.array(df['Age'])
 
+    exams = np.array(df['Exam_Date'])
+    exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
+    rids = map(lambda s: _ptid_to_rid(s, roster), subjects)
+    exam_dates = map(lambda i: _get_dx(rids[i],
+                                       dx, exams[i],
+                                       viscode=None,
+                                       return_code=True), range(len(rids)))
+    viscodes = map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
+                   range(len(rids)))
+
     # get baseline data
+    # XXX : should be improved by a generic function that extracts baselines
     imgs = np.array(pet_files_all)
     imgs_baseline = np.array([imgs[i] for i in idx[:-1]])
     dxconv_baseline = [dx_conv_all[i] for i in idx[:-1]]
@@ -265,7 +293,8 @@ def fetch_adni_longitudinal_fdg_pet():
                  dx_list_baseline=dxconv_baseline,
                  dx_group_baseline=dx_baseline,
                  subjects=subjects, subjects_idx=np.array(idx),
-                 images=images, ages=ages, subjects_all=subjects_all)
+                 images=images, ages=ages, subjects_all=subjects_all,
+                 viscodes=viscodes, exam_dates=exam_dates)
 
 
 def fetch_adni_fdg_pet():
