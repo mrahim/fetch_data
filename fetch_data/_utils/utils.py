@@ -175,7 +175,7 @@ def _get_vcodes(rid, exam_date, dx):
     if not vcodes2.any():
         vcodes2 = [np.nan]
 
-    return vcodes[0], vcodes2[0]
+    return [vcodes[0], vcodes2[0]]
 
 
 def _get_dx(rid, dx, exam=None, viscode=None, return_code=False):

@@ -28,31 +28,6 @@ DX_LIST = np.array(['None',
                     'AD->Normal'])
 
 
-def fetch_adni_rs_fmri():
-    """ Returns paths of ADNI resting-state fMRI
-    """
-
-    # get file paths and description
-    subjects, subject_paths, description = _get_subjects_and_description(
-                                         base_dir='ADNI_baseline_rs_fmri_mri',
-                                         prefix='s[0-9]*')
-    # get the correct subject_id
-    subjects = [s[1:] for s in subjects]
-
-    # get func files
-    func_files = map(lambda x: _glob_subject_img(x, suffix='func/swr*.nii',
-                                                 first_img=True),
-                     subject_paths)
-
-    # get phenotype from csv
-    df = description[description['Subject_ID'].isin(subjects)]
-    dx_group = np.array(df['DX_Group_x'])
-    mmscores = np.array(df['MMSCORE'])
-
-    return Bunch(func=func_files, dx_group=dx_group,
-                 mmscores=mmscores, subjects=subjects)
-
-
 def fetch_adni_longitudinal_mmse_score():
     """ Returns longitudinal mmse scores
     """
@@ -71,14 +46,16 @@ def fetch_adni_longitudinal_mmse_score():
     # get subject id
     ptids = [_rid_to_ptid(rid, roster) for rid in rids]
     # extract visit code (don't use EXAMDATE ; null for GO/2)
-    vcodes = fs['VISCODE2'].values
+    vcodes = fs['VISCODE'].values
     vcodes = vcodes[idx_num]
+    vcodes2 = fs['VISCODE2'].values
+    vcodes2 = vcodes2[idx_num]
     # get diagnosis
     dx_group = map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
-                   rids, vcodes)
+                   rids, vcodes2)
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
-                 mmse=mmse, exam_codes=vcodes)
+                 mmse=mmse, exam_codes=vcodes, exam_codes2=vcodes2)
 
 
 def fetch_adni_longitudinal_csf_biomarker():
@@ -111,7 +88,7 @@ def fetch_adni_longitudinal_csf_biomarker():
                    rids, vcodes)
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
-                 csf=biom, exam_code=vcodes)
+                 csf=biom, exam_codes=vcodes, exam_codes2=vcodes)
 
 
 def fetch_adni_longitudinal_hippocampus_volume():
@@ -137,6 +114,8 @@ def fetch_adni_longitudinal_hippocampus_volume():
     ptids = [_rid_to_ptid(rid, roster) for rid in rids]
     # extract exam date
     exams = fs['EXAMDATE'].values[idx_num]
+    vcodes = fs['VISCODE'].values[idx_num]
+    vcodes2 = fs['VISCODE2'].values[idx_num]
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
 
     # extract diagnosis
@@ -144,7 +123,8 @@ def fetch_adni_longitudinal_hippocampus_volume():
     dx_group = DX_LIST[dx_ind]
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
-                 hipp=hipp, exam_date=exams)
+                 hipp=hipp, exam_dates=exams, exam_codes=vcodes,
+                 exam_codes2=vcodes2)
 
 
 def fetch_adni_longitudinal_rs_fmri_DARTEL():
@@ -190,49 +170,37 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
                                        return_code=True), range(len(rids)))
     viscodes = map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
+    viscodes = np.array(viscodes)
+    vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
-    return Bunch(func=func_files, dx_group=dx_group, viscodes=viscodes,
-                 exam_dates=exam_dates,
+    return Bunch(func=func_files, dx_group=dx_group, exam_codes=vcodes,
+                 exam_dates=exam_dates, exam_codes2=vcodes2,
                  subjects=subjects, images=images, motions=motions)
 
 
-def fetch_adni_baseline_rs_fmri():
-    """ Returns paths of ADNI rs-fMRI
+def fetch_adni_rs_fmri():
+    """ Returns paths of ADNI resting-state fMRI
     """
 
     # get file paths and description
     subjects, subject_paths, description = _get_subjects_and_description(
-                                           base_dir='ADNI_baseline_rs_fmri',
-                                           prefix='[0-9]*')
+                                         base_dir='ADNI_baseline_rs_fmri_mri',
+                                         prefix='s[0-9]*')
+    # get the correct subject_id
+    subjects = [s[1:] for s in subjects]
 
     # get func files
-    func_files = map(lambda x: _glob_subject_img(x, suffix='func/wr*.nii',
+    func_files = map(lambda x: _glob_subject_img(x, suffix='func/swr*.nii',
                                                  first_img=True),
                      subject_paths)
 
     # get phenotype from csv
     df = description[description['Subject_ID'].isin(subjects)]
-    dx_group = np.array(df['DX_Group'])
+    dx_group = np.array(df['DX_Group_x'])
+    mmscores = np.array(df['MMSCORE'])
 
-    return Bunch(func=func_files, dx_group=dx_group, subjects=subjects)
-
-
-def fetch_adni_rs_fmri_conn(filename):
-    """Returns paths of ADNI rs-fMRI processed connectivity
-    for a given npy file with shape : n_subjects x n_voxels x n_rois
-    """
-
-    FEAT_DIR = _set_data_base_dir('features')
-    conn_file = os.path.join(FEAT_DIR, 'smooth_preproc', filename)
-    if not os.path.isfile(conn_file):
-        raise OSError('Connectivity file not found ...')
-    dataset = fetch_adni_petmr()
-    subj_list = dataset['subjects']
-
-    return Bunch(fmri_data=conn_file,
-                 dx_group=np.array(dataset['dx_group']),
-                 mmscores=np.array(dataset['mmscores']),
-                 subjects=subj_list)
+    return Bunch(func=func_files, dx_group=dx_group,
+                 mmscores=mmscores, subjects=subjects)
 
 
 def fetch_adni_longitudinal_fdg_pet():
@@ -272,13 +240,15 @@ def fetch_adni_longitudinal_fdg_pet():
 
     exams = np.array(df['Exam_Date'])
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
-    rids = map(lambda s: _ptid_to_rid(s, roster), subjects)
+    rids = map(lambda s: _ptid_to_rid(s, roster), subjects_all)
     exam_dates = map(lambda i: _get_dx(rids[i],
                                        dx, exams[i],
                                        viscode=None,
                                        return_code=True), range(len(rids)))
     viscodes = map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
+    viscodes = np.array(viscodes)
+    vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
     # get baseline data
     # XXX : should be improved by a generic function that extracts baselines
@@ -287,14 +257,58 @@ def fetch_adni_longitudinal_fdg_pet():
     dxconv_baseline = [dx_conv_all[i] for i in idx[:-1]]
     dx_baseline = _set_group_indices(dxconv_baseline)
 
-    return Bunch(pet=pet_files, pet_all=pet_files_all,
-                 pet_baseline=imgs_baseline,
+#    return Bunch(pet=pet_files, pet_all=pet_files_all,
+#                 pet_baseline=imgs_baseline,
+#                 dx_group=dx_group_all, dx_conv=dx_conv_all,
+#                 dx_list_baseline=dxconv_baseline,
+#                 dx_group_baseline=dx_baseline,
+#                 subjects_unique=subjects, subjects_idx=np.array(idx),
+#                 images=images, ages=ages, subjects=subjects_all,
+#                 exam_codes=vcodes, exam_dates=exam_dates,
+#                 exam_codes2=vcodes2)
+    return Bunch(pet=pet_files_all,
                  dx_group=dx_group_all, dx_conv=dx_conv_all,
-                 dx_list_baseline=dxconv_baseline,
-                 dx_group_baseline=dx_baseline,
-                 subjects=subjects, subjects_idx=np.array(idx),
-                 images=images, ages=ages, subjects_all=subjects_all,
-                 viscodes=viscodes, exam_dates=exam_dates)
+                 images=images, ages=ages, subjects=subjects_all,
+                 exam_codes=vcodes, exam_dates=exam_dates, exam_codes2=vcodes2)
+
+
+def fetch_adni_baseline_rs_fmri():
+    """ Returns paths of ADNI rs-fMRI
+    """
+
+    # get file paths and description
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                           base_dir='ADNI_baseline_rs_fmri',
+                                           prefix='[0-9]*')
+
+    # get func files
+    func_files = map(lambda x: _glob_subject_img(x, suffix='func/wr*.nii',
+                                                 first_img=True),
+                     subject_paths)
+
+    # get phenotype from csv
+    df = description[description['Subject_ID'].isin(subjects)]
+    dx_group = np.array(df['DX_Group'])
+
+    return Bunch(func=func_files, dx_group=dx_group, subjects=subjects)
+
+
+def fetch_adni_rs_fmri_conn(filename):
+    """Returns paths of ADNI rs-fMRI processed connectivity
+    for a given npy file with shape : n_subjects x n_voxels x n_rois
+    """
+
+    FEAT_DIR = _set_data_base_dir('features')
+    conn_file = os.path.join(FEAT_DIR, 'smooth_preproc', filename)
+    if not os.path.isfile(conn_file):
+        raise OSError('Connectivity file not found ...')
+    dataset = fetch_adni_petmr()
+    subj_list = dataset['subjects']
+
+    return Bunch(fmri_data=conn_file,
+                 dx_group=np.array(dataset['dx_group']),
+                 mmscores=np.array(dataset['mmscores']),
+                 subjects=subj_list)
 
 
 def fetch_adni_fdg_pet():
@@ -422,14 +436,14 @@ def fetch_atlas(atlas_name):
     return atlas
 
 
-def intersect_datasets(dataset1, dataset2, intersect_on='viscodes'):
+def intersect_datasets(dataset1, dataset2, intersect_on='exam_codes'):
     """Returns the intersection of two dataset Bunches.
         The output is a dataset (Bunch).
         The intersection is on patient id and visit code or date
     """
-    if intersect_on not in ['viscodes', 'exam_dates']:
+    if intersect_on not in ['exam_codes', 'exam_dates']:
         raise ValueError('intersect_on should be either '
-                         'viscodes or exam_dates')
+                         'exam_codes or exam_dates')
         return -1
 
     if 'subjects' not in dataset1.keys() or 'subjects' not in dataset2.keys():
@@ -441,3 +455,18 @@ def intersect_datasets(dataset1, dataset2, intersect_on='viscodes'):
         raise ValueError('Cannot intersect,' + intersect_on + ' not found !')
         return -1
     return 0
+
+
+def extract_baseline_dataset(dataset):
+    """Returns baseline bunch data of a dataset bunch
+    """
+    # equivalent keys are : 'sc', 'bl', 'scmri'
+    idx = np.hstack((np.where(dataset.exam_codes2 == 'sc'),
+                     np.where(dataset.exam_codes2 == 'bl'),
+                     np.where(dataset.exam_codes2 == 'scmri'))).ravel()
+
+    for k in dataset.keys():
+        dataset[k] = np.array(dataset[k])
+        dataset[k] = dataset[k][idx]
+
+    return dataset
