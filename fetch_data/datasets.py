@@ -159,6 +159,7 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
     roster = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
                                       'ROSTER.csv'))
     df = description[description['Image_ID'].isin(images)]
+    df = df.sort('Image_ID')
     dx_group = np.array(df['DX_Group'])
     subjects = np.array(df['Subject_ID'])
     exams = np.array(df['EXAM_DATE'])
