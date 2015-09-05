@@ -248,3 +248,12 @@ def _set_classification_data(features, dx_group, groups):
     X = features[idx_, :]
     y = np.array([1]*len(dx_idx[groups[0]]) + [-1]*len(dx_idx[groups[1]]))
     return X, y
+
+
+def _set_group_data(features, dx_group, group):
+    """Returns X for a given group
+    """
+    # get group indices
+    dx_idx = _set_group_indices(dx_group)
+    # extract and return the corresponding features
+    return features[dx_idx[group], :]
