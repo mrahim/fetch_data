@@ -3,6 +3,7 @@
     Some utils functions for :
     - masking
     - diagnosis
+    - custom shuffle splitting
     - ...
     @author: mehdi.rahim@cea.fr
 """
@@ -13,6 +14,7 @@ import numpy as np
 import pandas as pd
 import nibabel as nib
 from datetime import date
+from sklearn.cross_validation import StratifiedShuffleSplit, ShuffleSplit
 
 
 def array_to_niis(data, mask):
@@ -257,3 +259,82 @@ def _set_group_data(features, dx_group, group):
     dx_idx = _set_group_indices(dx_group)
     # extract and return the corresponding features
     return features[dx_idx[group], :]
+
+
+def StratifiedSubjectShuffleSplit(dataset, groups, n_iter=100, test_size=.3,
+                                  random_state=42):
+    """ Stratified ShuffleSplit on subjects
+    (train and test size may change depending on the number of acquistions)"""
+
+    idx = _set_group_indices(dataset.dx_group)
+    groups_idx = np.hstack([idx[group] for group in groups])
+
+    subjects = np.asarray(dataset.subjects)
+    subjects = subjects[groups_idx]
+
+    dx = np.asarray(dataset.dx_group)
+    dx = dx[groups_idx]
+
+    # extract unique subject ids and dx
+    subjects_unique_values, \
+    subjects_unique_indices = np.unique(subjects, return_index=True)
+
+    # extract indices for the needed groups
+    dx_unique_values = dx[subjects_unique_indices]
+    y = dx_unique_values
+
+    # generate folds stratified on dx
+    sss = StratifiedShuffleSplit(y, n_iter=n_iter, test_size=test_size,
+                                 random_state=random_state)
+    ssss = []
+    for tr, ts in sss:
+        # get training subjects
+        subjects_tr = subjects_unique_values[tr]
+
+        # get testing subjects
+        subjects_ts = subjects_unique_values[ts]
+
+        # get all subject indices
+        train = []
+        test = []
+        for subj in subjects_tr:
+            train.extend(np.where(subjects == subj)[0])
+        for subj in subjects_ts:
+            test.extend(np.where(subjects == subj)[0])
+
+        # append ssss
+        ssss.append([train, test])
+    return ssss
+
+
+def SubjectShuffleSplit(dataset, groups, n_iter=100,
+                        test_size=.3, random_state=42):
+    """ Specific ShuffleSplit (train on all subject images,
+    but test only on one image of the remaining subjects)"""
+
+    idx = _set_group_indices(dataset.dx_group)
+    groups_idx = np.hstack((idx[groups[0]],
+                            idx[groups[1]]))
+
+    subjects = np.asarray(dataset.subjects)
+    subjects = subjects[groups_idx]
+    subjects_unique = np.unique(subjects)
+
+    n = len(subjects_unique)
+    ss = ShuffleSplit(n, n_iter=n_iter,
+                      test_size=test_size, random_state=random_state)
+
+    subj_ss = []
+    for train, test in ss:
+        train_set = np.array([], dtype=int)
+        for subj in subjects_unique[train]:
+            subj_ind = np.where(subjects == subj)
+            train_set = np.concatenate((train_set, subj_ind[0]))
+        test_set = []
+        for subj in subjects_unique[test]:
+            subj_ind = np.where(subjects == subj)
+            test_set.append(subj_ind[0][0])
+        test_set = np.asarray(test_set)
+        subj_ss.append([train_set, test_set])
+
+    return subj_ss
