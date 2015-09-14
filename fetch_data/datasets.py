@@ -9,6 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 from datetime import date
+from joblib import Memory
 from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
                           _set_cache_base_dir, _glob_subject_img, _ptid_to_rid,
@@ -134,6 +135,7 @@ def fetch_adni_longitudinal_rs_fmri_DARTEL():
                                            'resampled*.nii')
 
 
+@profile
 def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
                                     prefix='wr*.nii'):
     """ Returns paths of ADNI rs-fMRI
@@ -164,19 +166,38 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
     subjects = np.array(df['Subject_ID'])
     exams = np.array(df['EXAM_DATE'])
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
-    rids = map(lambda s: _ptid_to_rid(s, roster), subjects)
-    exam_dates = map(lambda i: _get_dx(rids[i],
-                                       dx, exams[i],
-                                       viscode=None,
-                                       return_code=True), range(len(rids)))
-    viscodes = map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
+    def _get_rids():
+        return map(lambda s: _ptid_to_rid(s, roster), subjects)
+    rids = memory.cache(_get_rids)()
+
+    def _get_examdates():
+        return map(lambda i: _get_dx(rids[i],
+                                     dx, exams[i],
+                                     viscode=None,
+                                     return_code=True), range(len(rids)))
+    exam_dates = memory.cache(_get_examdates)()
+
+    def _get_viscodes():
+        return map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
-    viscodes = np.array(viscodes)
+    viscodes = np.array(memory.cache(_get_viscodes)())
     vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
     return Bunch(func=func_files, dx_group=dx_group, exam_codes=vcodes,
                  exam_dates=exam_dates, exam_codes2=vcodes2,
                  subjects=subjects, images=images, motions=motions)
+
+
+if __name__ == "__main__":
+    fetch_adni_longitudinal_rs_fmri()
 
 
 def fetch_adni_rs_fmri():
