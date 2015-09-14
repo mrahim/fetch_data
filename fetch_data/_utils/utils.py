@@ -221,16 +221,35 @@ def _get_dx(rid, dx, exam=None, viscode=None, return_code=False):
         return -4
 
 
+def _get_mmse(rid, mmse):
+    """Returns mmse for a given rid
+    """
+    m = mmse[mmse.RID == rid]['MMSCORE'].dropna().values
+    if len(m) > 0:
+        return m[0]
+    else:
+        return 0.
+
+
 def _get_dob(rid, demog):
     """Returns date of birth of a given rid
     """
-    return 0
+    yy = demog[demog.RID == rid]['PTDOBYY'].dropna().values
+    mm = demog[demog.RID == rid]['PTDOBMM'].dropna().values
+    if len(yy) > 0 and len(mm) > 0:
+        return date(int(yy[0]), int(mm[0]), 01)
+    else:
+        return date(1900, 01, 01)
 
 
 def _get_gender(rid, demog):
     """Returns gender if a given rid
     """
-    return 0
+    gender = demog[demog.RID == rid]['PTGENDER'].dropna().values
+    if len(gender) > 0:
+        return int(gender[0])
+    else:
+        return -1
 
 
 def _set_group_indices(dx_group):

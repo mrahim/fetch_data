@@ -14,7 +14,7 @@ from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
                           _set_cache_base_dir, _glob_subject_img, _ptid_to_rid,
                           _set_group_indices, _get_subjects_and_description,
-                          _get_vcodes, _get_dob, _get_gender)
+                          _get_vcodes, _get_dob, _get_gender, _get_mmse)
 
 
 DX_LIST = np.array(['None',
@@ -306,21 +306,21 @@ def fetch_adni_longitudinal_fdg_pet():
         os.makedirs(cache_dir)
     memory = Memory(cachedir=cache_dir, verbose=0)
 
-    def _get_ridspet():
-        return map(lambda s: _ptid_to_rid(s, roster), subjects)
-    rids = memory.cache(_get_ridspet)()
+    def _get_ridspet(subjects_all):
+        return map(lambda s: _ptid_to_rid(s, roster), subjects_all)
+    rids = memory.cache(_get_ridspet)(subjects_all)
 
-    def _get_examdatespet():
+    def _get_examdatespet(rids):
         return map(lambda i: _get_dx(rids[i],
                                      dx, exams[i],
                                      viscode=None,
                                      return_code=True), range(len(rids)))
-    exam_dates = memory.cache(_get_examdatespet)()
+    exam_dates = np.array(memory.cache(_get_examdatespet)(rids))
 
-    def _get_viscodespet():
+    def _get_viscodespet(rids):
         return map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
-    viscodes = np.array(memory.cache(_get_viscodespet)())
+    viscodes = np.array(memory.cache(_get_viscodespet)(rids))
     vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
     return Bunch(pet=pet_files_all,
@@ -549,6 +549,7 @@ def get_demographics(subjects, exam_dates=None):
     BASE_DIR = _set_data_base_dir('ADNI_csv')
     demog = pd.read_csv(os.path.join(BASE_DIR, 'PTDEMOG.csv'))
     roster = pd.read_csv(os.path.join(BASE_DIR, 'ROSTER.csv'))
+    mmse = pd.read_csv(os.path.join(BASE_DIR, 'MMSE.csv'))
 
     # caching dataframe extraction functions
     CACHE_DIR = _set_cache_base_dir()
@@ -561,7 +562,16 @@ def get_demographics(subjects, exam_dates=None):
         return map(lambda s: _ptid_to_rid(s, roster), subjects)
     rids = np.array(memory.cache(_get_ridsdemo)())
 
-    dobs = map(lambda r: _get_dob(r, demog), rids)
-    genders = map(lambda r: _get_gender(r, demog), rids)
+    def _get_dobdemo():
+        return map(lambda r: _get_dob(r, demog), rids)
+    dobs = np.array(memory.cache(_get_dobdemo)())
 
-    return Bunch(dobs=dobs, genders=genders)
+    def _get_genderdemo():
+        return map(lambda r: _get_gender(r, demog), rids)
+    genders = np.array(memory.cache(_get_genderdemo)()).astype(int)
+
+    def _get_mmsedemo():
+        return map(lambda r: _get_mmse(r, mmse), rids)
+    mmses = np.array(memory.cache(_get_mmsedemo)())
+
+    return Bunch(dobs=dobs, genders=genders, mmses=mmses)
