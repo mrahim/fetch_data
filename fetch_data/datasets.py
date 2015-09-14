@@ -44,16 +44,31 @@ def fetch_adni_longitudinal_mmse_score():
 
     # extract roster id
     rids = fs['RID'].values[idx_num]
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
+    def _getptidsmmse():
+        return [_rid_to_ptid(rid, roster) for rid in rids]
+
     # get subject id
-    ptids = [_rid_to_ptid(rid, roster) for rid in rids]
+    ptids = memory.cache(_getptidsmmse)()
     # extract visit code (don't use EXAMDATE ; null for GO/2)
     vcodes = fs['VISCODE'].values
     vcodes = vcodes[idx_num]
     vcodes2 = fs['VISCODE2'].values
     vcodes2 = vcodes2[idx_num]
-    # get diagnosis
-    dx_group = map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
+
+    def _getdxmmse():
+        return map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
                    rids, vcodes2)
+
+    # get diagnosis
+    dx_group = memory.cache(_getdxmmse)()
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
                  mmse=mmse, exam_codes=vcodes, exam_codes2=vcodes2)
@@ -83,10 +98,23 @@ def fetch_adni_longitudinal_csf_biomarker():
     # get phenotype
     vcodes = csf['VISCODE'].values[idx]
     rids = csf['RID'].values[idx]
-    ptids = map(lambda x: _rid_to_ptid(x, roster), rids)
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
+    def _getptidscsf():
+        return map(lambda x: _rid_to_ptid(x, roster), rids)
+    ptids = memory.cache(_getptidscsf)()
+
     # get diagnosis
-    dx_group = map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
+    def _getdxcsf():
+        return map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
                    rids, vcodes)
+    dx_group = memory.cache(_getdxcsf)()
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
                  csf=biom, exam_codes=vcodes, exam_codes2=vcodes)
@@ -111,8 +139,19 @@ def fetch_adni_longitudinal_hippocampus_volume():
 
     # extract roster id
     rids = fs['RID'].values[idx_num]
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
     # get subject id
-    ptids = [_rid_to_ptid(rid, roster) for rid in rids]
+    def _getptidshippo():
+        return [_rid_to_ptid(rid, roster) for rid in rids]
+    ptids = memory.cache(_getptidshippo)()
+
     # extract exam date
     exams = fs['EXAMDATE'].values[idx_num]
     vcodes = fs['VISCODE'].values[idx_num]
@@ -120,7 +159,9 @@ def fetch_adni_longitudinal_hippocampus_volume():
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
 
     # extract diagnosis
-    dx_ind = np.array(map(_get_dx, rids, [dx]*len(rids), exams))
+    def _getdxhippo():
+        return np.array(map(_get_dx, rids, [dx]*len(rids), exams))
+    dx_ind = memory.cache(_getdxhippo)()
     dx_group = DX_LIST[dx_ind]
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
@@ -135,7 +176,6 @@ def fetch_adni_longitudinal_rs_fmri_DARTEL():
                                            'resampled*.nii')
 
 
-@profile
 def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
                                     prefix='wr*.nii'):
     """ Returns paths of ADNI rs-fMRI
@@ -174,30 +214,26 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
         os.makedirs(cache_dir)
     memory = Memory(cachedir=cache_dir, verbose=0)
 
-    def _get_rids():
+    def _get_ridsfmri():
         return map(lambda s: _ptid_to_rid(s, roster), subjects)
-    rids = memory.cache(_get_rids)()
+    rids = memory.cache(_get_ridsfmri)()
 
-    def _get_examdates():
+    def _get_examdatesfmri():
         return map(lambda i: _get_dx(rids[i],
                                      dx, exams[i],
                                      viscode=None,
                                      return_code=True), range(len(rids)))
-    exam_dates = memory.cache(_get_examdates)()
+    exam_dates = memory.cache(_get_examdatesfmri)()
 
-    def _get_viscodes():
+    def _get_viscodesfmri():
         return map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
-    viscodes = np.array(memory.cache(_get_viscodes)())
+    viscodes = np.array(memory.cache(_get_viscodesfmri)())
     vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
     return Bunch(func=func_files, dx_group=dx_group, exam_codes=vcodes,
                  exam_dates=exam_dates, exam_codes2=vcodes2,
                  subjects=subjects, images=images, motions=motions)
-
-
-if __name__ == "__main__":
-    fetch_adni_longitudinal_rs_fmri()
 
 
 def fetch_adni_rs_fmri():
@@ -262,32 +298,31 @@ def fetch_adni_longitudinal_fdg_pet():
 
     exams = np.array(df['Exam_Date'])
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
-    rids = map(lambda s: _ptid_to_rid(s, roster), subjects_all)
-    exam_dates = map(lambda i: _get_dx(rids[i],
-                                       dx, exams[i],
-                                       viscode=None,
-                                       return_code=True), range(len(rids)))
-    viscodes = map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
+    def _get_ridspet():
+        return map(lambda s: _ptid_to_rid(s, roster), subjects)
+    rids = memory.cache(_get_ridspet)()
+
+    def _get_examdatespet():
+        return map(lambda i: _get_dx(rids[i],
+                                     dx, exams[i],
+                                     viscode=None,
+                                     return_code=True), range(len(rids)))
+    exam_dates = memory.cache(_get_examdatespet)()
+
+    def _get_viscodespet():
+        return map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
-    viscodes = np.array(viscodes)
+    viscodes = np.array(memory.cache(_get_viscodespet)())
     vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
-    # get baseline data
-    # XXX : should be improved by a generic function that extracts baselines
-    imgs = np.array(pet_files_all)
-    imgs_baseline = np.array([imgs[i] for i in idx[:-1]])
-    dxconv_baseline = [dx_conv_all[i] for i in idx[:-1]]
-    dx_baseline = _set_group_indices(dxconv_baseline)
-
-#    return Bunch(pet=pet_files, pet_all=pet_files_all,
-#                 pet_baseline=imgs_baseline,
-#                 dx_group=dx_group_all, dx_conv=dx_conv_all,
-#                 dx_list_baseline=dxconv_baseline,
-#                 dx_group_baseline=dx_baseline,
-#                 subjects_unique=subjects, subjects_idx=np.array(idx),
-#                 images=images, ages=ages, subjects=subjects_all,
-#                 exam_codes=vcodes, exam_dates=exam_dates,
-#                 exam_codes2=vcodes2)
     return Bunch(pet=pet_files_all,
                  dx_group=dx_group_all, dx_conv=dx_conv_all,
                  images=images, ages=ages, subjects=subjects_all,
