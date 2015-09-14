@@ -14,7 +14,7 @@ from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
                           _set_cache_base_dir, _glob_subject_img, _ptid_to_rid,
                           _set_group_indices, _get_subjects_and_description,
-                          _get_vcodes)
+                          _get_vcodes, _get_dob, _get_gender)
 
 
 DX_LIST = np.array(['None',
@@ -541,3 +541,27 @@ def extract_baseline_dataset(dataset):
         dataset[k] = dataset[k][idx]
 
     return dataset
+
+
+def get_demographics(subjects, exam_dates=None):
+    """Returns demographic informations (dob, gender)
+    """
+    BASE_DIR = _set_data_base_dir('ADNI_csv')
+    demog = pd.read_csv(os.path.join(BASE_DIR, 'PTDEMOG.csv'))
+    roster = pd.read_csv(os.path.join(BASE_DIR, 'ROSTER.csv'))
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
+    def _get_ridsdemo():
+        return map(lambda s: _ptid_to_rid(s, roster), subjects)
+    rids = np.array(memory.cache(_get_ridsdemo)())
+
+    dobs = map(lambda r: _get_dob(r, demog), rids)
+    genders = map(lambda r: _get_gender(r, demog), rids)
+
+    return Bunch(dobs=dobs, genders=genders)

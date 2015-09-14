@@ -221,6 +221,18 @@ def _get_dx(rid, dx, exam=None, viscode=None, return_code=False):
         return -4
 
 
+def _get_dob(rid, demog):
+    """Returns date of birth of a given rid
+    """
+    return 0
+
+
+def _get_gender(rid, demog):
+    """Returns gender if a given rid
+    """
+    return 0
+
+
 def _set_group_indices(dx_group):
     """Returns indices for each clinical group
     """
