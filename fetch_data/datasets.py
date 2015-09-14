@@ -391,6 +391,14 @@ def fetch_adni_petmr():
 
 def fetch_adni_masks():
     """Returns paths of masks (pet, fmri, both)
+
+    Returns
+    -------
+    mask : Bunch containing:
+           - mask_pet
+           - mask_fmri
+           - mask_pet_longitudinal
+           - mask_petmr
     """
     BASE_DIR = _set_data_base_dir('features/masks')
 
@@ -399,7 +407,13 @@ def fetch_adni_masks():
                  mask_pet_longitudinal=os.path.join(BASE_DIR,
                                                     'mask_longitudinal_fdg_pet'
                                                     '.nii.gz'),
-                 mask_petmr=os.path.join(BASE_DIR, 'mask_petmr.nii.gz'))
+                 mask_petmr=os.path.join(BASE_DIR, 'mask_petmr.nii.gz'),
+                 mask_petmr_longitudinal=os.path.join(BASE_DIR,
+                                                      'mask_longitudinal_petmr'
+                                                      '.nii.gz'),
+                 mask_fmri_longitudinal=os.path.join(BASE_DIR,
+                                                     'mask_longitudinal_fmri'
+                                                     '.nii.gz'))
 
 
 def fetch_atlas(atlas_name):
