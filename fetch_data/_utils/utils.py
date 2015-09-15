@@ -226,7 +226,7 @@ def _get_mmse(rid, mmse):
     """
     m = mmse[mmse.RID == rid]['MMSCORE'].dropna().values
     if len(m) > 0:
-        return m[0]
+        return np.median(m)
     else:
         return 0.
 
@@ -307,8 +307,8 @@ def StratifiedSubjectShuffleSplit(dataset, groups, n_iter=100, test_size=.3,
     dx = dx[groups_idx]
 
     # extract unique subject ids and dx
-    subjects_unique_values, \
-    subjects_unique_indices = np.unique(subjects, return_index=True)
+    (subjects_unique_values,
+     subjects_unique_indices) = np.unique(subjects, return_index=True)
 
     # extract indices for the needed groups
     dx_unique_values = dx[subjects_unique_indices]

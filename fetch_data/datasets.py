@@ -184,14 +184,15 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
     # get file paths and description
     images, subject_paths, description = _get_subjects_and_description(
                                          base_dir=dirname, prefix='I[0-9]*')
-
+    images = np.array(images)
     # get func files
     func_files = map(lambda x: _glob_subject_img(x, suffix='func/' + prefix,
                                                  first_img=True),
                      subject_paths)
+    func_files = np.array(func_files)
 
     # get motion files
-    motions = None
+    # motions = None
     # motions = map(lambda x: _glob_subject_img(x, suffix='func/' + 'rp_*.txt',
     # first_img=True), subject_paths)
 
@@ -214,26 +215,26 @@ def fetch_adni_longitudinal_rs_fmri(dirname='ADNI_longitudinal_rs_fmri',
         os.makedirs(cache_dir)
     memory = Memory(cachedir=cache_dir, verbose=0)
 
-    def _get_ridsfmri():
+    def _get_ridsfmri(subjects):
         return map(lambda s: _ptid_to_rid(s, roster), subjects)
-    rids = memory.cache(_get_ridsfmri)()
+    rids = np.array(memory.cache(_get_ridsfmri)(subjects))
 
-    def _get_examdatesfmri():
+    def _get_examdatesfmri(rids):
         return map(lambda i: _get_dx(rids[i],
                                      dx, exams[i],
                                      viscode=None,
                                      return_code=True), range(len(rids)))
-    exam_dates = memory.cache(_get_examdatesfmri)()
+    exam_dates = np.array(memory.cache(_get_examdatesfmri)(rids))
 
-    def _get_viscodesfmri():
+    def _get_viscodesfmri(rids):
         return map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
                    range(len(rids)))
-    viscodes = np.array(memory.cache(_get_viscodesfmri)())
+    viscodes = np.array(memory.cache(_get_viscodesfmri)(rids))
     vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
 
     return Bunch(func=func_files, dx_group=dx_group, exam_codes=vcodes,
                  exam_dates=exam_dates, exam_codes2=vcodes2,
-                 subjects=subjects, images=images, motions=motions)
+                 subjects=subjects, images=images)
 
 
 def fetch_adni_rs_fmri():
@@ -281,9 +282,11 @@ def fetch_adni_longitudinal_fdg_pet():
     for pet_file in pet_files:
         idx.append(idx[-1] + len(pet_file))
         pet_files_all.extend(pet_file)
+    pet_files_all = np.array(pet_files_all)
 
     images = [os.path.split(pet_file)[-1].split('_')[-1][:-4]
               for pet_file in pet_files_all]
+    images = np.array(images)
 
     # get phenotype from csv
     dx = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
@@ -558,20 +561,20 @@ def get_demographics(subjects, exam_dates=None):
         os.makedirs(cache_dir)
     memory = Memory(cachedir=cache_dir, verbose=0)
 
-    def _get_ridsdemo():
+    def _get_ridsdemo(subjects):
         return map(lambda s: _ptid_to_rid(s, roster), subjects)
-    rids = np.array(memory.cache(_get_ridsdemo)())
+    rids = np.array(memory.cache(_get_ridsdemo)(subjects))
 
-    def _get_dobdemo():
+    def _get_dobdemo(rids):
         return map(lambda r: _get_dob(r, demog), rids)
-    dobs = np.array(memory.cache(_get_dobdemo)())
+    dobs = np.array(memory.cache(_get_dobdemo)(rids))
 
-    def _get_genderdemo():
+    def _get_genderdemo(rids):
         return map(lambda r: _get_gender(r, demog), rids)
-    genders = np.array(memory.cache(_get_genderdemo)()).astype(int)
+    genders = np.array(memory.cache(_get_genderdemo)(rids)).astype(int)
 
-    def _get_mmsedemo():
+    def _get_mmsedemo(rids):
         return map(lambda r: _get_mmse(r, mmse), rids)
-    mmses = np.array(memory.cache(_get_mmsedemo)())
+    mmses = np.array(memory.cache(_get_mmsedemo)(rids))
 
     return Bunch(dobs=dobs, genders=genders, mmses=mmses)
