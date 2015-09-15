@@ -532,7 +532,7 @@ def intersect_datasets(dataset1, dataset2, intersect_on='exam_codes'):
 
 
 def extract_baseline_dataset(dataset):
-    """Returns baseline bunch data of a dataset bunch
+    """Returns baseline bunch of a dataset
     """
     # equivalent keys are : 'sc', 'bl', 'scmri'
     idx = np.hstack((np.where(dataset.exam_codes2 == 'sc'),
@@ -543,6 +543,16 @@ def extract_baseline_dataset(dataset):
         dataset[k] = np.array(dataset[k])
         dataset[k] = dataset[k][idx]
 
+    return dataset
+
+
+def extract_unique_dataset(dataset):
+    """Returns unique bunch of a dataset
+    """
+    _, unique_idx = np.unique(dataset.subjects, return_index=True)
+    for k in dataset.keys():
+        dataset[k] = np.array(dataset[k])
+        dataset[k] = dataset[k][unique_idx]
     return dataset
 
 
