@@ -49,14 +49,14 @@ def _get_subjects_and_description(base_dir,
 
     fname = os.path.join(BASE_DIR, exclusion_file)
     if not os.path.isfile(fname):
-        raise OSError('File not found ...')
+        raise OSError('%s not found ...' % fname)
     excluded_subjects = []
     if os.stat(fname).st_size > 0:
         excluded_subjects = np.loadtxt(fname, dtype=str)
 
     fname = os.path.join(BASE_DIR, description_csv)
     if not os.path.isfile(fname):
-        raise OSError('File not found ...')
+        raise OSError('%s not found ...' % fname)
     description = pd.read_csv(fname)
 
     # exclude bad QC subjects
@@ -77,7 +77,7 @@ def _glob_subject_img(subject_path, suffix, first_img=False):
 
     img_files = sorted(glob.glob(os.path.join(subject_path, suffix)))
     if len(img_files) == 0:
-        raise IndexError('Image not found...')
+        raise IndexError('Image not found in %s' % subject_path)
     elif first_img:
         return img_files[0]
     else:
@@ -93,6 +93,7 @@ def _set_base_dir():
         paths = [x.strip() for x in f.read().split('\n')]
         for path in paths:
             if os.path.isdir(path):
+                print('Datadir= %s' % path)
                 base_dir = path
                 break
     if base_dir == '':
