@@ -52,23 +52,23 @@ def fetch_adni_longitudinal_mmse_score():
         os.makedirs(cache_dir)
     memory = Memory(cachedir=cache_dir, verbose=0)
 
-    def _getptidsmmse():
+    def _getptidsmmse(rids):
         return [_rid_to_ptid(rid, roster) for rid in rids]
 
     # get subject id
-    ptids = memory.cache(_getptidsmmse)()
+    ptids = memory.cache(_getptidsmmse)(rids)
     # extract visit code (don't use EXAMDATE ; null for GO/2)
     vcodes = fs['VISCODE'].values
     vcodes = vcodes[idx_num]
     vcodes2 = fs['VISCODE2'].values
     vcodes2 = vcodes2[idx_num]
 
-    def _getdxmmse():
+    def _getdxmmse(rids, vcodes2):
         return map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
                    rids, vcodes2)
 
     # get diagnosis
-    dx_group = memory.cache(_getdxmmse)()
+    dx_group = memory.cache(_getdxmmse)(rids, vcodes2)
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
                  mmse=mmse, exam_codes=vcodes, exam_codes2=vcodes2)
@@ -106,15 +106,15 @@ def fetch_adni_longitudinal_csf_biomarker():
         os.makedirs(cache_dir)
     memory = Memory(cachedir=cache_dir, verbose=0)
 
-    def _getptidscsf():
+    def _getptidscsf(rids):
         return map(lambda x: _rid_to_ptid(x, roster), rids)
-    ptids = memory.cache(_getptidscsf)()
+    ptids = memory.cache(_getptidscsf)(rids)
 
     # get diagnosis
-    def _getdxcsf():
+    def _getdxcsf(rids, vcodes):
         return map(lambda x, y: DX_LIST[_get_dx(x, dx, viscode=y)],
                    rids, vcodes)
-    dx_group = memory.cache(_getdxcsf)()
+    dx_group = memory.cache(_getdxcsf)(rids, vcodes)
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
                  csf=biom, exam_codes=vcodes, exam_codes2=vcodes)
@@ -148,9 +148,9 @@ def fetch_adni_longitudinal_hippocampus_volume():
     memory = Memory(cachedir=cache_dir, verbose=0)
 
     # get subject id
-    def _getptidshippo():
+    def _getptidshippo(rids):
         return [_rid_to_ptid(rid, roster) for rid in rids]
-    ptids = memory.cache(_getptidshippo)()
+    ptids = memory.cache(_getptidshippo)(rids)
 
     # extract exam date
     exams = fs['EXAMDATE'].values[idx_num]
@@ -159,9 +159,9 @@ def fetch_adni_longitudinal_hippocampus_volume():
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
 
     # extract diagnosis
-    def _getdxhippo():
+    def _getdxhippo(rids, exams):
         return np.array(map(_get_dx, rids, [dx]*len(rids), exams))
-    dx_ind = memory.cache(_getdxhippo)()
+    dx_ind = memory.cache(_getdxhippo)(rids, exams)
     dx_group = DX_LIST[dx_ind]
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
