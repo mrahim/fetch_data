@@ -337,9 +337,10 @@ def fetch_adni_baseline_rs_fmri():
     """
 
     # get file paths and description
-    subjects, subject_paths, description = _get_subjects_and_description(
-                                           base_dir='ADNI_baseline_rs_fmri',
-                                           prefix='[0-9]*')
+    (subjects,
+     subject_paths,
+     description) = _get_subjects_and_description(
+                    base_dir='ADNI_baseline_rs_fmri', prefix='[0-9]*')
 
     # get func files
     func_files = map(lambda x: _glob_subject_img(x, suffix='func/wr*.nii',
