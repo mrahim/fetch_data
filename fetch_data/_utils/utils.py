@@ -279,7 +279,7 @@ def _set_classification_data(features, dx_group, groups):
     for group in groups:
         idx_.extend(dx_idx[group])
     # extract corresponding features and classes (binary-only)
-    X = features[idx_, :]
+    X = features[idx_, ...]
     y = np.array([1]*len(dx_idx[groups[0]]) + [-1]*len(dx_idx[groups[1]]))
     return X, y
 
@@ -290,7 +290,7 @@ def _set_group_data(features, dx_group, group):
     # get group indices
     dx_idx = _set_group_indices(dx_group)
     # extract and return the corresponding features
-    return features[dx_idx[group], :]
+    return features[dx_idx[group], ...]
 
 
 def StratifiedSubjectShuffleSplit(dataset, groups, n_iter=100, test_size=.3,
