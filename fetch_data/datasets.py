@@ -70,7 +70,7 @@ def fetch_adni_longitudinal_mmse_score():
     # get diagnosis
     dx_group = memory.cache(_getdxmmse)(rids, vcodes2)
 
-    return Bunch(dx_group=dx_group, subjects=np.array(ptids),
+    return Bunch(dx_group=np.array(dx_group), subjects=np.array(ptids),
                  mmse=mmse, exam_codes=vcodes, exam_codes2=vcodes2)
 
 
@@ -116,7 +116,7 @@ def fetch_adni_longitudinal_csf_biomarker():
                    rids, vcodes)
     dx_group = memory.cache(_getdxcsf)(rids, vcodes)
 
-    return Bunch(dx_group=dx_group, subjects=np.array(ptids),
+    return Bunch(dx_group=np.array(dx_group), subjects=np.array(ptids),
                  csf=biom, exam_codes=vcodes, exam_codes2=vcodes)
 
 
@@ -157,6 +157,7 @@ def fetch_adni_longitudinal_hippocampus_volume():
     vcodes = fs['VISCODE'].values[idx_num]
     vcodes2 = fs['VISCODE2'].values[idx_num]
     exams = map(lambda e: date(int(e[:4]), int(e[5:7]), int(e[8:])), exams)
+    exams = np.array(exams)
 
     # extract diagnosis
     def _getdxhippo(rids, exams):
@@ -165,7 +166,7 @@ def fetch_adni_longitudinal_hippocampus_volume():
     dx_group = DX_LIST[dx_ind]
 
     return Bunch(dx_group=dx_group, subjects=np.array(ptids),
-                 hipp=hipp, exam_dates=exams, exam_codes=vcodes,
+                 hipp=hipp, exam_dates=np.array(exams), exam_codes=vcodes,
                  exam_codes2=vcodes2)
 
 
