@@ -15,6 +15,7 @@ import pandas as pd
 import nibabel as nib
 from datetime import date
 from sklearn.cross_validation import StratifiedShuffleSplit, ShuffleSplit
+from sklearn.metrics import accuracy_score
 
 
 def array_to_niis(data, mask):
@@ -370,3 +371,28 @@ def SubjectShuffleSplit(dataset, groups, n_iter=100,
         subj_ss.append([train_set, test_set])
 
     return subj_ss
+
+
+def _train_and_score(clf, X, y, train, test):
+    """ Fit a classifier clf and train set
+    and return the accuracy score on test set"""
+
+    clf.fit(X[train], y[train])
+    return clf.score(X[test], y[test])
+
+
+def _train_and_score_2(clf, X, y, train, test):
+    """ Fit a classifier clf and train set
+    and return the score on test set"""
+
+    clf.fit(X[train], y[train])
+    y_pred = clf.predict(X[test])
+    return accuracy_score(y[test], y_pred)
+
+def _train_and_predict(clf, X, y, train, test):
+    """ Fit a classifier clf and train set
+    and return predictions on test set"""
+
+    clf.fit(X[train], y[train])
+    y_pred = clf.predict(X[test])
+    return accuracy_score(y[test], y_pred)
