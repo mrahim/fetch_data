@@ -270,7 +270,7 @@ def _set_group_indices(dx_group):
     return idx
 
 
-def _set_classification_data(features, dx_group, groups):
+def _set_classification_data(features, dx_group, groups, return_idx=False):
     """Returns X and y for classification according to the chosen groups
     """
     # get group indices
@@ -282,7 +282,10 @@ def _set_classification_data(features, dx_group, groups):
     # extract corresponding features and classes (binary-only)
     X = features[idx_, ...]
     y = np.hstack(([1]*len(dx_idx[groups[0]]), [-1]*len(dx_idx[groups[1]])))
-    return X, y
+    if return_idx:
+        return X, y, idx_
+    else:
+        return X, y
 
 
 def _set_group_data(features, dx_group, group):
