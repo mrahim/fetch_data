@@ -590,3 +590,41 @@ def get_demographics(subjects, exam_dates=None):
     mmses = np.array(memory.cache(_get_mmsedemo)(rids))
 
     return Bunch(dobs=dobs, genders=genders, mmses=mmses)
+
+
+def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
+    """ Extract longitudinal images
+    """
+
+    if modality == 'pet':
+        dataset = fetch_adni_longitudinal_fdg_pet()
+        img_key = 'pet'
+    elif modality == 'fmri':
+        dataset = fetch_adni_longitudinal_rs_fmri()
+        img_key = 'func'
+    else:
+        raise ValueError('%s not found !' % modality)
+
+    df = pd.DataFrame(data=dataset)
+    grouped = df.groupby('subjects').groups
+
+    df_count = df.groupby('subjects')[img_key].count()
+    df_count = df_count[df_count >= nb_imgs_min]
+    df_count = df_count[df_count <= nb_imgs_max]
+
+    # n_images per subject
+    # img_per_subject = df_count.values
+    # unique subjects with multiple images
+    subjects = df_count.keys().values
+    subj = np.array([dataset.subjects[grouped[s]] for s in subjects])
+    # diagnosis of the subjects
+    dx_group = np.hstack([dataset.dx_group[grouped[s][0]] for s in subjects])
+    dx_all = np.array([dataset.dx_group[grouped[s]] for s in subjects])
+    # all images of the subjects
+    imgs = np.array([dataset[img_key][grouped[s]] for s in subjects])
+    imgs_baseline = np.array([dataset[img_key][grouped[s][0]]
+                             for s in subjects])
+
+    return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
+                 dx_group=dx_all, dx_group_baseline=dx_group,
+                 subjects=subj, subjects_baseline=subjects)

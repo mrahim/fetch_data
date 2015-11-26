@@ -392,6 +392,7 @@ def _train_and_score_2(clf, X, y, train, test):
     y_pred = clf.predict(X[test])
     return accuracy_score(y[test], y_pred)
 
+
 def _train_and_predict(clf, X, y, train, test):
     """ Fit a classifier clf and train set
     and return predictions on test set"""
@@ -399,3 +400,23 @@ def _train_and_predict(clf, X, y, train, test):
     clf.fit(X[train], y[train])
     y_pred = clf.predict(X[test])
     return accuracy_score(y[test], y_pred)
+
+
+def _set_subjects_splits(imgs, subjects, dx_group, groups, n_iter=100,
+                         test_size=.25, random_state=42):
+    """Returns X, y
+    """
+    X, y, idx = _set_classification_data(imgs, dx_group, groups,
+                                         return_idx=True)
+    sss = StratifiedShuffleSplit(y, n_iter=n_iter, test_size=test_size,
+                                 random_state=random_state)
+    return X, y, idx, sss
+
+
+def _set_y_from_dx(dx, target='AD'):
+    """ dx is a vector of labels
+    """
+    dx = np.hstack(dx)
+    y = - np.ones(dx.shape[0])
+    y[dx == 'AD'] = 1
+    return y
