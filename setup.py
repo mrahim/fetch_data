@@ -13,7 +13,7 @@ setup(name='fetch_data',
     description='Dataset loader',
     long_description=open('README.md').read(),
     author='Mehdi Rahim',
-    author_email='mehdi.rahim@cea.fr',
+    author_email='rahim.mehdi@gmail.com',
     packages=['fetch_data'],
     requires = ['numpy', 'pandas'],
 )

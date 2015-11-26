@@ -420,3 +420,19 @@ def _set_y_from_dx(dx, target='AD'):
     y = - np.ones(dx.shape[0])
     y[dx == 'AD'] = 1
     return y
+
+
+def _binarize_dx(dx, target=['AD', 'MCI->AD']):
+    """ dx is a vector of labels
+    """
+    dx = np.hstack(dx)
+    y = - np.ones(dx.shape[0])
+    for t in target:
+        y[dx == t] = 1
+    return y
+
+
+def _binarize_dxs(dxs, target=['AD', 'MCI->AD']):
+    """ dxs longitudinal vector of labels
+    """
+    return np.array([_binarize_dx(dx) for dx in dxs])
