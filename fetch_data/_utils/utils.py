@@ -223,6 +223,88 @@ def _get_dx(rid, dx, exam=None, viscode=None, return_code=False):
         return -4
 
 
+def _get_cdr(rid, cdr):
+    """Returns cdr for a given rid
+    """
+    c = cdr[cdr.RID == rid]['CDGLOBAL'].dropna().values
+    c = c[c >= 0]
+    if len(c) > 0:
+        return np.percentile(c, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
+def _get_gdscale(rid, gdscale):
+    """Returns gdscale for a given rid
+    """
+    g = gdscale[gdscale.RID == rid]['GDTOTAL'].dropna().values
+    g = g[g >= 0]
+    if len(g) > 0:
+        return np.percentile(g, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
+def _get_npiq(rid, npiq):
+    """Returns npiq for a given rid
+    """
+    n = npiq[npiq.RID == rid]['NPISCORE'].dropna().values
+    n = n[n >= 0]
+    if len(n) > 0:
+        return np.percentile(n, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
+def _get_faq(rid, faq):
+    """Returns faq for a given rid
+    """
+    f = faq[faq.RID == rid]['FAQTOTAL'].dropna().values
+    f = f[f >= 0]
+    if len(f) > 0:
+        return np.percentile(f, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
+def _get_adas(rid, adas1, adas2, mode=11):
+    """Returns adas for a given rid
+    mode : 11  or 13
+    """
+    if mode == 11:
+        key1, key2 = 'TOTAL11', 'TOTSCORE'
+    elif mode == 13:
+        key1, key2 = 'TOTALMOD', 'TOTAL13'
+    else:
+        raise(ValueError('adas mode should be 11 or 13 you gave %u' % mode))
+
+    a = adas1[adas1.RID == rid][key1].dropna().values
+    if len(a) == 0:
+        a = adas2[adas2.RID == rid][key2].dropna().values
+    a = a[a >= 0]
+    if len(a) > 0:
+        return np.percentile(a, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
+def _get_nss(rid, nss, mode=1):
+    """Returns nss for a given rid
+    """
+    if mode == 1:
+        key = 'ADNI_MEM'
+    elif mode == 2:
+        key = 'ADNI_EF'
+    else:
+        raise(ValueError('nss mode should be 1 or 2 you gave %u' % mode))
+
+    n = nss[nss.RID == rid][key].dropna().values
+    if len(n) > 0:
+        return np.percentile(n, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
 def _get_mmse(rid, mmse):
     """Returns mmse for a given rid
     """

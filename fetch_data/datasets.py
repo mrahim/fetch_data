@@ -14,7 +14,9 @@ from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
                           _set_cache_base_dir, _glob_subject_img, _ptid_to_rid,
                           _set_group_indices, _get_subjects_and_description,
-                          _get_vcodes, _get_dob, _get_gender, _get_mmse)
+                          _get_vcodes, _get_dob, _get_gender, _get_mmse,
+                          _get_cdr, _get_gdscale, _get_faq, _get_npiq,
+                          _get_adas, _get_nss)
 
 
 DX_LIST = np.array(['None',
@@ -565,6 +567,13 @@ def get_demographics(subjects, exam_dates=None):
     demog = pd.read_csv(os.path.join(BASE_DIR, 'PTDEMOG.csv'))
     roster = pd.read_csv(os.path.join(BASE_DIR, 'ROSTER.csv'))
     mmse = pd.read_csv(os.path.join(BASE_DIR, 'MMSE.csv'))
+    cdr = pd.read_csv(os.path.join(BASE_DIR, 'CDR.csv'))
+    gdscale = pd.read_csv(os.path.join(BASE_DIR, 'GDSCALE.csv'))
+    faq = pd.read_csv(os.path.join(BASE_DIR, 'FAQ.csv'))
+    npiq = pd.read_csv(os.path.join(BASE_DIR, 'NPIQ.csv'))
+    adas1 = pd.read_csv(os.path.join(BASE_DIR, 'ADASSCORES.csv'))
+    adas2 = pd.read_csv(os.path.join(BASE_DIR, 'ADAS_ADNIGO2.csv'))
+    nss = pd.read_csv(os.path.join(BASE_DIR, 'UWNPSYCHSUM_01_12_16.csv'))
 
     # caching dataframe extraction functions
     CACHE_DIR = _set_cache_base_dir()
@@ -589,7 +598,34 @@ def get_demographics(subjects, exam_dates=None):
         return map(lambda r: _get_mmse(r, mmse), rids)
     mmses = np.array(memory.cache(_get_mmsedemo)(rids))
 
-    return Bunch(dobs=dobs, genders=genders, mmses=mmses)
+    def _get_cdrdemo(rids):
+        return map(lambda r: _get_cdr(r, cdr), rids)
+    cdrs = np.array(memory.cache(_get_cdrdemo)(rids))
+
+    def _getgdscaledemo(rids):
+        return map(lambda r: _get_gdscale(r, gdscale), rids)
+    gds = np.array(memory.cache(_getgdscaledemo)(rids))
+
+    def _getfaqdemo(rids):
+        return map(lambda r: _get_faq(r, faq), rids)
+    faqs = np.array(memory.cache(_getfaqdemo)(rids))
+
+    def _getnpiqdemo(rids):
+        return map(lambda r: _get_npiq(r, npiq), rids)
+    npiqs = np.array(memory.cache(_getnpiqdemo)(rids))
+
+    def _getadasdemo(rids):
+        return map(lambda r: _get_adas(r, adas1, adas2), rids)
+    adas = np.array(memory.cache(_getadasdemo)(rids))
+
+    def _getnssdemo(rids):
+        return (map(lambda r: _get_nss(r, nss, mode=1), rids),
+                map(lambda r: _get_nss(r, nss, mode=2), rids))
+    nss1, nss2 = memory.cache(_getnssdemo)(rids)
+    nss1, nss2 = np.array(nss1), np.array(nss2)
+
+    return Bunch(dobs=dobs, genders=genders, mmses=mmses, nss1=nss1, nss2=nss2,
+                 cdr=cdrs, gdscale=gds, faq=faqs, npiq=npiqs, adas=adas)
 
 
 def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
@@ -626,7 +662,8 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
                              for s in subjects])
     # age
     if modality == 'pet':
-        ages_baseline = np.hstack([dataset.ages[grouped[s][0]] for s in subjects])
+        ages_baseline = np.hstack([dataset.ages[grouped[s][0]]
+                                   for s in subjects])
         ages = np.array([dataset.ages[grouped[s]] for s in subjects])
         return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
                      dx_group=dx_all, dx_group_baseline=dx_group,
