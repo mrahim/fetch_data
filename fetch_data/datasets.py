@@ -481,10 +481,10 @@ def fetch_atlas(atlas_name):
     """Retruns selected atlas path
         atlas_names values are : msdl, harvard_oxford, juelich, mayo ...
     """
-    from nilearn.datasets import fetch_msdl_atlas
     CACHE_DIR = _set_cache_base_dir()
     if atlas_name == 'msdl':
-        atlas = fetch_msdl_atlas()['maps']
+        from nilearn.datasets import fetch_atlas_msdl
+        atlas = fetch_atlas_msdl()['maps']
     elif atlas_name == 'harvard_oxford':
         atlas = os.path.join(CACHE_DIR, 'atlas',
                              'HarvardOxford-cortl-maxprob-thr0-2mm.nii.gz')
@@ -624,7 +624,15 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
     imgs = np.array([dataset[img_key][grouped[s]] for s in subjects])
     imgs_baseline = np.array([dataset[img_key][grouped[s][0]]
                              for s in subjects])
-
-    return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
-                 dx_group=dx_all, dx_group_baseline=dx_group,
-                 subjects=subj, subjects_baseline=subjects)
+    # age
+    if modality == 'pet':
+        ages_baseline = np.hstack([dataset.ages[grouped[s][0]] for s in subjects])
+        ages = np.array([dataset.ages[grouped[s]] for s in subjects])
+        return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
+                     dx_group=dx_all, dx_group_baseline=dx_group,
+                     subjects=subj, subjects_baseline=subjects,
+                     ages=ages, ages_baseline=ages_baseline)
+    else:
+        return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
+                     dx_group=dx_all, dx_group_baseline=dx_group,
+                     subjects=subj, subjects_baseline=subjects)
