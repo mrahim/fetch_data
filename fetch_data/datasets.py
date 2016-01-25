@@ -16,7 +16,7 @@ from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
                           _set_group_indices, _get_subjects_and_description,
                           _get_vcodes, _get_dob, _get_gender, _get_mmse,
                           _get_cdr, _get_gdscale, _get_faq, _get_npiq,
-                          _get_adas, _get_nss)
+                          _get_adas, _get_nss, _get_neurobat)
 
 
 DX_LIST = np.array(['None',
@@ -574,6 +574,7 @@ def get_demographics(subjects, exam_dates=None):
     adas1 = pd.read_csv(os.path.join(BASE_DIR, 'ADASSCORES.csv'))
     adas2 = pd.read_csv(os.path.join(BASE_DIR, 'ADAS_ADNIGO2.csv'))
     nss = pd.read_csv(os.path.join(BASE_DIR, 'UWNPSYCHSUM_01_12_16.csv'))
+    neurobat = pd.read_csv(os.path.join(BASE_DIR, 'NEUROBAT.csv'))
 
     # caching dataframe extraction functions
     CACHE_DIR = _set_cache_base_dir()
@@ -624,8 +625,15 @@ def get_demographics(subjects, exam_dates=None):
     nss1, nss2 = memory.cache(_getnssdemo)(rids)
     nss1, nss2 = np.array(nss1), np.array(nss2)
 
+    def _getneurobatdemo(rids):
+        return (map(lambda r: _get_neurobat(r, neurobat, mode=1), rids),
+                map(lambda r: _get_neurobat(r, neurobat, mode=2), rids))
+    nb1, nb2 = memory.cache(_getneurobatdemo)(rids)
+    nb1, nb2 = np.array(nb1), np.array(nb2)
+
     return Bunch(dobs=dobs, genders=genders, mmses=mmses, nss1=nss1, nss2=nss2,
-                 cdr=cdrs, gdscale=gds, faq=faqs, npiq=npiqs, adas=adas)
+                 cdr=cdrs, gdscale=gds, faq=faqs, npiq=npiqs, adas=adas,
+                 ldel=nb1, limm=nb2)
 
 
 def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
@@ -673,3 +681,38 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
         return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
                      dx_group=dx_all, dx_group_baseline=dx_group,
                      subjects=subj, subjects_baseline=subjects)
+
+
+def get_scores_adnidod(subjects):
+    # data files
+    BASE_DIR = _set_data_base_dir('ADNIDOD_csv')
+
+    # meta-data
+    demog = pd.read_csv(os.path.join(BASE_DIR, 'PTDEMOG.csv'))
+    mmse = pd.read_csv(os.path.join(BASE_DIR, 'MMSE.csv'))
+    cdr = pd.read_csv(os.path.join(BASE_DIR, 'CDR.csv'))
+    gdscale = pd.read_csv(os.path.join(BASE_DIR, 'GDSCALE.csv'))
+    faq = pd.read_csv(os.path.join(BASE_DIR, 'FAQ.csv'))
+    npiq = pd.read_csv(os.path.join(BASE_DIR, 'NPI.csv'))
+    adas = pd.read_csv(os.path.join(BASE_DIR, 'ADAS.csv'))
+    neurobat = pd.read_csv(os.path.join(BASE_DIR, 'NEUROBAT.csv'))
+
+    def get_score(subj_id, score, score_file, ptid='SCRNO'):
+        m = score_file[score_file[ptid] == int(subj_id)][score].dropna().values
+        if len(m) > 0:
+            m[m < 0] = 0
+            return np.median(m)
+        else:
+            return 0.
+
+    df = {'subjects': subjects}
+    keys = ['mmse', 'cdr', 'gdscale', 'faq', 'npiq', 'adas1', 'adas2',
+            'ldel', 'limm', 'age']
+    scores = ['MMSCORE', 'CDGLOBAL', 'GDTOTAL', 'FAQTOTAL', 'NPITOTAL',
+              'TOTSCORE', 'TOTAL13', 'LDELTOTAL', 'LIMMTOTAL', 'PTAGE']
+    score_files = [mmse, cdr, gdscale, faq, npiq, adas, adas, neurobat,
+                   neurobat, demog]
+    for k, s, sf in zip(keys, scores, score_files):
+        sc = [get_score(subj, s, sf) for subj in subjects]
+        df[k] = sc
+    return df

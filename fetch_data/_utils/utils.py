@@ -125,11 +125,12 @@ def _rid_to_ptid(rid, roster):
         return ''
 
 
-def _ptid_to_rid(ptid, roster):
+def _ptid_to_rid(ptid, roster, ptid_label='PTID'):
     """Returns roster id for a given patient id
+    ptid_label values : 'PTID', 'SCRNO'
     """
 
-    rid = roster[roster.PTID == ptid]['RID'].values
+    rid = roster[roster[ptid_label] == ptid]['RID'].values
     if len(rid) > 0:
         return rid[0]
     else:
@@ -284,6 +285,24 @@ def _get_adas(rid, adas1, adas2, mode=11):
     a = a[a >= 0]
     if len(a) > 0:
         return np.percentile(a, 50, interpolation='nearest')
+    else:
+        return 0.
+
+
+def _get_neurobat(rid, neurobat, mode=1):
+    """Returns neurobat for a given rid
+    """
+    if mode == 1:
+        key = 'LDELTOTAL'
+    elif mode == 2:
+        key = 'LIMMTOTAL'
+    else:
+        raise(ValueError('neurobat mode should be 1 or 2 you gave %u' % mode))
+
+    n = neurobat[neurobat.RID == rid][key].dropna().values
+    n = n[n >= 0]
+    if len(n) > 0:
+        return np.percentile(n, 50, interpolation='nearest')
     else:
         return 0.
 
