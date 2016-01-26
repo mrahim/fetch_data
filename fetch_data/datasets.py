@@ -714,5 +714,61 @@ def get_scores_adnidod(subjects):
                    neurobat, demog]
     for k, s, sf in zip(keys, scores, score_files):
         sc = [get_score(subj, s, sf) for subj in subjects]
-        df[k] = sc
+        df[k] = np.array(sc)
     return df
+
+
+def fetch_adnidod_rs_fmri():
+    """fetcher for adnidod rs fmri
+    """
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                        base_dir='ADNIDOD_rs_fmri',
+                                        prefix='0*')
+    subjects = np.array(subjects)
+    # get func files
+    func_files = map(lambda x: _glob_subject_img(x, suffix='func/' + 'wr*',
+                                                 first_img=True),
+                     subject_paths)
+    func_files = np.array(func_files)
+    scores = get_scores_adnidod(subjects)
+    return Bunch(func=func_files,
+                 subjects=subjects,
+                 npiq=scores['npiq'],
+                 mmse=scores['mmse'],
+                 ldel=scores['ldel'],
+                 age=scores['age'],
+                 faq=scores['faq'],
+                 cdr=scores['cdr'],
+                 limm=scores['limm'],
+                 adas1=scores['adas1'],
+                 adas2=scores['adas2'],
+                 gdscale=scores['gdscale'],)
+
+
+
+
+def fetch_adnidod_av45_pet():
+    """fetcher for adnidod rs fmri
+    """
+    subjects, subject_paths, description = _get_subjects_and_description(
+                                        base_dir='ADNIDOD_av45_pet',
+                                        prefix='0*')
+    subjects = np.array(subjects)
+    # get func files
+    func_files = map(lambda x: _glob_subject_img(x, suffix='pet/' + '*.nii',
+                                                 first_img=True),
+                     subject_paths)
+    func_files = np.array(func_files)
+    scores = get_scores_adnidod(subjects)
+    return Bunch(func=func_files,
+                 subjects=subjects,
+                 npiq=scores['npiq'],
+                 mmse=scores['mmse'],
+                 ldel=scores['ldel'],
+                 age=scores['age'],
+                 faq=scores['faq'],
+                 cdr=scores['cdr'],
+                 limm=scores['limm'],
+                 adas1=scores['adas1'],
+                 adas2=scores['adas2'],
+                 gdscale=scores['gdscale'],)
