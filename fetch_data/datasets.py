@@ -8,7 +8,7 @@
 import os
 import numpy as np
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 from joblib import Memory
 from sklearn.datasets.base import Bunch
 from _utils.utils import (_set_data_base_dir, _rid_to_ptid, _get_dx,
@@ -263,6 +263,78 @@ def fetch_adni_rs_fmri():
 
     return Bunch(func=func_files, dx_group=dx_group,
                  mmscores=mmscores, subjects=subjects)
+
+
+def fetch_adni_longitudinal_av45_pet():
+    """Returns paths of longitudinal ADNI AV45-PET
+    """
+
+    # get file paths and description
+    (subjects,
+     subject_paths,
+     description) = _get_subjects_and_description(
+                    base_dir='ADNI_av45_pet',
+                    prefix='I[0-9]*')
+
+    # get pet files
+    pet_files = map(lambda x: _glob_subject_img(x, suffix='pet/wr*.nii',
+                                                first_img=False),
+                    subject_paths)
+    idx = [0]
+    pet_files_all = []
+    for pet_file in pet_files:
+        idx.append(idx[-1] + len(pet_file))
+        pet_files_all.extend(pet_file)
+    pet_files_all = np.array(pet_files_all)
+
+    images = [os.path.split(pet_file)[-1].split('_')[-1][:-4]
+              for pet_file in pet_files_all]
+    images = np.array(images)
+
+    # get phenotype from csv
+    dx = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
+                                  'DXSUM_PDXCONV_ADNIALL.csv'))
+    roster = pd.read_csv(os.path.join(_set_data_base_dir('ADNI_csv'),
+                                      'ROSTER.csv'))
+    df = description[description['Image_ID'].isin(images)]
+    dx_group_all = np.array(df['DX_Group'])
+    subjects_all = np.array(df['Subject_ID'])
+    ages = np.array(df['Age'])
+
+    exams = np.array(df['Study_Date'])
+    exams = map(lambda e: datetime.strptime(e, '%m/%d/%Y').date(), exams)
+
+    # caching dataframe extraction functions
+    CACHE_DIR = _set_cache_base_dir()
+    cache_dir = os.path.join(CACHE_DIR, 'joblib', 'fetch_data_cache')
+    if not os.path.isdir(cache_dir):
+        os.makedirs(cache_dir)
+    memory = Memory(cachedir=cache_dir, verbose=0)
+
+    def _get_ridspet(subjects_all):
+        return map(lambda s: _ptid_to_rid(s, roster), subjects_all)
+    rids = memory.cache(_get_ridspet)(subjects_all)
+
+    def _get_examdatespet(rids):
+        return map(lambda i: _get_dx(rids[i],
+                                     dx, exams[i],
+                                     viscode=None,
+                                     return_code=True), range(len(rids)))
+    exam_dates = np.array(memory.cache(_get_examdatespet)(rids))
+
+    def _get_viscodespet(rids):
+        return map(lambda i: _get_vcodes(rids[i], str(exam_dates[i]), dx),
+                   range(len(rids)))
+    viscodes = np.array(memory.cache(_get_viscodespet)(rids))
+    if len(viscodes) > 0:
+        vcodes, vcodes2 = viscodes[:, 0], viscodes[:, 1]
+    else:
+        vcodes, vcodes2 = None, None
+
+    return Bunch(pet=pet_files_all,
+                 dx_group=dx_group_all,
+                 images=images, ages=ages, subjects=subjects_all,
+                 exam_codes=vcodes, exam_dates=exam_dates, exam_codes2=vcodes2)
 
 
 def fetch_adni_longitudinal_fdg_pet():
@@ -654,6 +726,9 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
     if modality == 'pet':
         dataset = fetch_adni_longitudinal_fdg_pet()
         img_key = 'pet'
+    elif modality == 'av45':
+        dataset = fetch_adni_longitudinal_av45_pet()
+        img_key = 'pet'
     elif modality == 'fmri':
         dataset = fetch_adni_longitudinal_rs_fmri_DARTEL()
         img_key = 'func'
@@ -682,9 +757,9 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
     # acquisition and exam dates of the subjects
     exams = np.hstack([dataset.exam_dates[grouped[s][0]] for s in subjects])
     exams_all = np.array([dataset.exam_dates[grouped[s]] for s in subjects])
-                         
+
     # age
-    if modality == 'pet':
+    if modality in ['pet', 'av45']:
         ages_baseline = np.hstack([dataset.ages[grouped[s][0]]
                                    for s in subjects])
         ages = np.array([dataset.ages[grouped[s]] for s in subjects])
