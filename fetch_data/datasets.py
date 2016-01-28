@@ -590,6 +590,10 @@ def get_demographics(subjects, exam_dates=None):
     def _get_dobdemo(rids):
         return map(lambda r: _get_dob(r, demog), rids)
     dobs = np.array(memory.cache(_get_dobdemo)(rids))
+    if exam_dates is not None:
+        # compute age
+        age = [np.round(abs(e - d).days/365., decimals=2)
+               for e, d in zip(exam_dates, dobs)]
 
     def _get_genderdemo(rids):
         return map(lambda r: _get_gender(r, demog), rids)
@@ -631,9 +635,16 @@ def get_demographics(subjects, exam_dates=None):
     nb1, nb2 = memory.cache(_getneurobatdemo)(rids)
     nb1, nb2 = np.array(nb1), np.array(nb2)
 
-    return Bunch(dobs=dobs, genders=genders, mmses=mmses, nss1=nss1, nss2=nss2,
-                 cdr=cdrs, gdscale=gds, faq=faqs, npiq=npiqs, adas=adas,
-                 ldel=nb1, limm=nb2)
+    if exam_dates is not None:
+        return Bunch(dob=dobs, gender=genders, mmse=mmses,
+                     nss1=nss1, nss2=nss2,
+                     cdr=cdrs, gdscale=gds, faq=faqs, npiq=npiqs, adas=adas,
+                     ldel=nb1, limm=nb2, age=age)
+    else:
+        return Bunch(dob=dobs, gender=genders, mmse=mmses,
+                     nss1=nss1, nss2=nss2, cdr=cdrs, gdscale=gds,
+                     faq=faqs, npiq=npiqs, adas=adas,
+                     ldel=nb1, limm=nb2)
 
 
 def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
@@ -644,7 +655,7 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
         dataset = fetch_adni_longitudinal_fdg_pet()
         img_key = 'pet'
     elif modality == 'fmri':
-        dataset = fetch_adni_longitudinal_rs_fmri()
+        dataset = fetch_adni_longitudinal_rs_fmri_DARTEL()
         img_key = 'func'
     else:
         raise ValueError('%s not found !' % modality)
@@ -668,6 +679,10 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
     imgs = np.array([dataset[img_key][grouped[s]] for s in subjects])
     imgs_baseline = np.array([dataset[img_key][grouped[s][0]]
                              for s in subjects])
+    # acquisition and exam dates of the subjects
+    exams = np.hstack([dataset.exam_dates[grouped[s][0]] for s in subjects])
+    exams_all = np.array([dataset.exam_dates[grouped[s]] for s in subjects])
+                         
     # age
     if modality == 'pet':
         ages_baseline = np.hstack([dataset.ages[grouped[s][0]]
@@ -676,11 +691,13 @@ def fetch_longitudinal_dataset(modality='pet', nb_imgs_min=3, nb_imgs_max=5):
         return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
                      dx_group=dx_all, dx_group_baseline=dx_group,
                      subjects=subj, subjects_baseline=subjects,
-                     ages=ages, ages_baseline=ages_baseline)
+                     ages=ages, ages_baseline=ages_baseline,
+                     exams=exams_all, exams_baseline=exams,)
     else:
         return Bunch(imgs=imgs, imgs_baseline=imgs_baseline,
                      dx_group=dx_all, dx_group_baseline=dx_group,
-                     subjects=subj, subjects_baseline=subjects)
+                     subjects=subj, subjects_baseline=subjects,
+                     exams=exams_all, exams_baseline=exams,)
 
 
 def get_scores_adnidod(subjects):
@@ -745,8 +762,6 @@ def fetch_adnidod_rs_fmri():
                  gdscale=scores['gdscale'],)
 
 
-
-
 def fetch_adnidod_av45_pet():
     """fetcher for adnidod rs fmri
     """
@@ -755,12 +770,12 @@ def fetch_adnidod_av45_pet():
                                         prefix='0*')
     subjects = np.array(subjects)
     # get func files
-    func_files = map(lambda x: _glob_subject_img(x, suffix='pet/' + '*.nii',
+    func_files = map(lambda x: _glob_subject_img(x, suffix='pet/' + 'wr*.nii',
                                                  first_img=True),
                      subject_paths)
-    func_files = np.array(func_files)
+    pet = np.array(func_files)
     scores = get_scores_adnidod(subjects)
-    return Bunch(func=func_files,
+    return Bunch(pet=pet,
                  subjects=subjects,
                  npiq=scores['npiq'],
                  mmse=scores['mmse'],

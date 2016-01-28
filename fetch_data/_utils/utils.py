@@ -477,6 +477,30 @@ def SubjectShuffleSplit(dataset, groups, n_iter=100,
     return subj_ss
 
 
+def SubjectSplit(dataset, n_iter=100, test_size=.3, random_state=42):
+    """ Without dx version (split on subjects)
+    """
+    subjects = np.hstack(dataset.subjects)
+    subjects_unique = np.unique(subjects)
+
+    n = len(subjects_unique)
+    ss = ShuffleSplit(n, n_iter=n_iter,
+                      test_size=test_size, random_state=random_state)
+
+    subj_ss = []
+    for train, test in ss:
+        train_set = np.array([], dtype=int)
+        for subj in subjects_unique[train]:
+            subj_ind = np.where(subjects == subj)
+            train_set = np.concatenate((train_set, subj_ind[0]))
+        test_set = np.array([], dtype=int)
+        for subj in subjects_unique[test]:
+            subj_ind = np.where(subjects == subj)
+            test_set = np.concatenate((test_set, subj_ind[0]))
+        subj_ss.append([train_set, test_set])
+    return subj_ss
+
+
 def _train_and_score(clf, X, y, train, test):
     """ Fit a classifier clf and train set
     and return the accuracy score on test set"""
@@ -512,6 +536,17 @@ def _set_subjects_splits(imgs, subjects, dx_group, groups, n_iter=100,
     sss = StratifiedShuffleSplit(y, n_iter=n_iter, test_size=test_size,
                                  random_state=random_state)
     return X, y, idx, sss
+
+
+def _set_subjects_splits_reg(dataset, n_iter=100,
+                             test_size=.25, random_state=42):
+    """Returns X, sss
+        Works only with longitudinal data
+    """
+    ss = SubjectSplit(dataset, n_iter=n_iter, test_size=test_size,
+                      random_state=42)
+    X = np.hstack(dataset.imgs)
+    return X, ss
 
 
 def _set_y_from_dx(dx, target='AD'):
