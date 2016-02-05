@@ -565,6 +565,9 @@ def fetch_atlas(atlas_name):
     elif atlas_name == 'juelich':
         atlas = os.path.join(CACHE_DIR, 'atlas',
                              'Juelich-maxprob-thr0-2mm.nii.gz')
+    elif atlas_name == 'julich':
+            atlas = os.path.join(CACHE_DIR, 'atlas',
+                                 'Juelich-prob-2mm.nii.gz')
     elif atlas_name == 'mayo':
         atlas = os.path.join(CACHE_DIR, 'atlas',
                              'atlas_68_rois.nii.gz')

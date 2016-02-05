@@ -85,7 +85,7 @@ def _glob_subject_img(subject_path, suffix, first_img=False):
         return img_files
 
 
-def _set_base_dir():
+def _set_base_dir(verbose=0):
     """ base_dir
     """
     base_dir = ''
@@ -94,7 +94,8 @@ def _set_base_dir():
         paths = [x.strip() for x in f.read().split('\n')]
         for path in paths:
             if os.path.isdir(path):
-                print('Datadir= %s' % path)
+                if verbose == 1:
+                    print('Datadir= %s' % path)
                 base_dir = path
                 break
     if base_dir == '':
@@ -372,7 +373,8 @@ def _set_group_indices(dx_group):
 
 
 def _set_classification_data(features, dx_group, groups, return_idx=False):
-    """Returns X and y for classification according to the chosen groups
+    """Set X and y for classification according to the chosen groups
+    Returns : X, y, (idx)
     """
     # get group indices
     dx_idx = _set_group_indices(dx_group)
